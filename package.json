@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
+    "@svgr/webpack": "^8.1.0",
     "@tanstack/react-query": "^5.90.12",
     "axios": "^1.13.2",
     "js-cookie": "^3.0.5",
