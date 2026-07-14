@@ -36,10 +36,23 @@ export const ViceStudentsAPI = {
     })) as ViceStudent;
   },
 
+  async assignClass(studentId: string, classId: number | null): Promise<ViceStudent> {
+    return (await secureFetch(`${API_BASE_URL}/vice/students/${encodeURIComponent(studentId)}/class`, {
+      method: "PATCH",
+      body: JSON.stringify({ classId }),
+    })) as ViceStudent;
+  },
+
+  async promote(payload: { studentIds: string[]; sourceLevel: ViceLevel; targetLevel: ViceLevel; department: ViceDepartment }): Promise<{ promoted: number }> {
+    return secureFetch(`${API_BASE_URL}/vice/students/promote`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }) as Promise<{ promoted: number }>;
+  },
+
   async remove(studentId: string): Promise<void> {
     await secureFetch(`${API_BASE_URL}/vice/students/${encodeURIComponent(studentId)}`, {
       method: "DELETE",
     });
   },
 };
-

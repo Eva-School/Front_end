@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 import en from "../../messages/en.json";
 import ar from "../../messages/ar.json";
 
@@ -39,17 +39,13 @@ export function LanguageProvider({
   initialLanguage: AppLanguage;
   children: React.ReactNode;
 }) {
-  const [language, setLanguageState] = useState<AppLanguage>(initialLanguage);
+  const [language, setLanguageState] = useState<AppLanguage>(() => {
+    if (typeof window === "undefined") return initialLanguage;
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved === "en" || saved === "ar" ? saved : initialLanguage;
+  });
 
-  useEffect(() => {
-    const saved =
-      typeof window !== "undefined"
-        ? (localStorage.getItem(STORAGE_KEY) as AppLanguage | null)
-        : null;
-    if (saved === "en" || saved === "ar") setLanguageState(saved);
-  }, [initialLanguage]);
-
-  const setLanguage = (lang: AppLanguage) => {
+  const setLanguage = useCallback((lang: AppLanguage) => {
     setLanguageState(lang);
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, lang);
@@ -57,9 +53,12 @@ export function LanguageProvider({
       document.documentElement.lang = lang;
       document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
     }
-  };
+  }, []);
 
-  const toggleLanguage = () => setLanguage(language === "en" ? "ar" : "en");
+  const toggleLanguage = useCallback(
+    () => setLanguage(language === "en" ? "ar" : "en"),
+    [language, setLanguage]
+  );
 
   const value = useMemo<LanguageContextValue>(() => {
     const dict = dictionaries[language];
@@ -70,7 +69,7 @@ export function LanguageProvider({
       toggleLanguage,
       t: (key: string, fallback?: string) => getNestedValue(dict, key) ?? fallback ?? key,
     };
-  }, [language]);
+  }, [language, setLanguage, toggleLanguage]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
@@ -80,4 +79,3 @@ export function useLanguage() {
   if (!ctx) throw new Error("useLanguage must be used within LanguageProvider");
   return ctx;
 }
-

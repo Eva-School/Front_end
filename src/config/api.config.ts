@@ -79,12 +79,19 @@ const getErrorMessage = async (res: Response): Promise<string> => {
   return `${errorMessage} (HTTP ${res.status})`;
 };
 
-export const secureFetch = async (
+const getResponseBody = async (res: Response): Promise<unknown> => {
+  if (res.status === 204) return null;
+  const contentType = res.headers.get("content-type") ?? "";
+  return contentType.includes("application/json") ? res.json() : null;
+};
+
+export const secureFetch = async <T = unknown>(
   url: string,
   options?: ExtendedRequestInit
-): Promise<unknown> => {
+): Promise<T> => {
   try {
-    const { _retry, ...requestOptions } = options ?? {};
+    const requestOptions = { ...(options ?? {}) };
+    delete requestOptions._retry;
     const accessToken = getAccessToken();
     const headers = buildHeaders(requestOptions.headers, accessToken);
 
@@ -114,7 +121,7 @@ export const secureFetch = async (
             headers: retryHeaders,
           });
           if (!retryRes.ok) throw new Error(await getErrorMessage(retryRes));
-          return retryRes.json();
+          return getResponseBody(retryRes) as T;
         });
       }
 
@@ -131,7 +138,7 @@ export const secureFetch = async (
           headers: retryHeaders,
         });
         if (!retryRes.ok) throw new Error(await getErrorMessage(retryRes));
-        return retryRes.json();
+        return getResponseBody(retryRes) as T;
       } catch (refreshError) {
         processQueue(refreshError, null);
         if (typeof window !== "undefined") {
@@ -145,7 +152,7 @@ export const secureFetch = async (
     }
 
     if (!res.ok) throw new Error(await getErrorMessage(res));
-    return res.json();
+    return getResponseBody(res) as T;
   } catch (error: unknown) {
     if (error instanceof Error) throw error;
     throw new Error("Network error occurred");

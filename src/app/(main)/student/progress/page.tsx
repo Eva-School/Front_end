@@ -11,16 +11,13 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import { useStudentYear } from "@/context/StudentYearContext";
+import { API_BASE_URL, secureFetch } from "@/config/api.config";
 
 interface SubjectProgress {
   subject: string;
@@ -37,25 +34,14 @@ const SUBJECT_COLORS = [
   "#9C27B0", "#FF5722", "#00BCD4", "#FF9800",
 ];
 
-// Mock / API fallback
-function buildMockProgress(year: string): SubjectProgress[] {
-  const subjects = ["Mathematics", "Science", "English", "History", "Arabic"];
-  const periods = ["Q1", "Q2", "Q3", "Q4"];
-
-  return subjects.map((s, si) => ({
-    subject: s,
-    color: SUBJECT_COLORS[si % SUBJECT_COLORS.length],
-    scores: periods.map((p, pi) => ({
-      period: p,
-      score: Math.round(60 + Math.random() * 38 + si * 2 + pi),
-      max: 100,
-    })),
-  }));
+interface StudentProgressApiItem {
+  subject: string;
+  quarterAverage: number;
+  finalExam: number;
 }
 
 // ─── Sparkline / Mini Line Chart ─────────────────────────────────────────────
 function SubjectSparkline({ data, color }: { data: { period: string; score: number }[]; color: string }) {
-  const theme = useTheme();
   const W = 180;
   const H = 60;
   const padX = 8;
@@ -214,27 +200,41 @@ export default function GradeProgressPage() {
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState<SubjectProgress[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [compareMode, setCompareMode] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    const API = process.env.NEXT_PUBLIC_API_URL || "https://evaschool.runasp.net/api";
-    fetch(`${API}/student/grades/progress?year=${year}`, {
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        const parsed: SubjectProgress[] = data?.subjects ?? buildMockProgress(year);
-        setSubjects(parsed);
-        setSelected(parsed.slice(0, 3).map((s) => s.subject));
-      })
-      .catch(() => {
-        const mock = buildMockProgress(year);
-        setSubjects(mock);
-        setSelected(mock.slice(0, 3).map((s) => s.subject));
-      })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
+      secureFetch<StudentProgressApiItem[]>(`${API_BASE_URL}/student/grades/progress?year=${encodeURIComponent(year)}`)
+        .then((data) => {
+          if (cancelled) return;
+          const parsed: SubjectProgress[] = (Array.isArray(data) ? data : []).map((item, index) => ({
+            subject: item.subject,
+            color: SUBJECT_COLORS[index % SUBJECT_COLORS.length],
+            scores: [
+              { period: "Quarter", score: Number(item.quarterAverage), max: 100 },
+              { period: "Final", score: Number(item.finalExam), max: 100 },
+            ],
+          }));
+          setSubjects(parsed);
+          setSelected(parsed.slice(0, 3).map((s) => s.subject));
+        })
+        .catch((requestError: unknown) => {
+          if (cancelled) return;
+          setSubjects([]);
+          setSelected([]);
+          setError(requestError instanceof Error ? requestError.message : "Progress data could not be loaded.");
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [year]);
 
   const toggleSubject = (name: string) => {
@@ -298,6 +298,18 @@ export default function GradeProgressPage() {
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 12 }}>
           <CircularProgress sx={{ color: primary }} />
+        </Box>
+      ) : error ? (
+        <Box sx={{ py: 10, textAlign: "center" }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Progress is unavailable</Typography>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>{error}</Typography>
+        </Box>
+      ) : subjects.length === 0 ? (
+        <Box sx={{ py: 10, textAlign: "center" }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>No progress data yet</Typography>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+            Grades for this academic year have not been recorded yet.
+          </Typography>
         </Box>
       ) : (
         <>

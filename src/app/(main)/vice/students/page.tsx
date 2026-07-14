@@ -169,7 +169,7 @@ export default function ViceStudentsPage() {
     try {
       await Promise.all(
         Array.from(selectedStudentIds).map((id) =>
-          ViceStudentsAPI.update(id, { classId: selectedClassId })
+          ViceStudentsAPI.assignClass(id, selectedClassId)
         )
       );
       appToast.success(`${selectedStudentIds.size} student(s) assigned to class!`);

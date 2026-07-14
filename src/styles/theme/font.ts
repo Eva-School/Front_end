@@ -1,7 +1,9 @@
-import { IBM_Plex_Sans } from "next/font/google";
+import localFont from "next/font/local";
 
-export const ibmPlexSans = IBM_Plex_Sans({
-    subsets: ["latin", "latin-ext"],
-    weight: ["400", "500", "600", "700"],
+export const notoSans = localFont({
+    src: [
+        { path: "../fonts/NotoSans-Regular.ttf", weight: "400", style: "normal" },
+        { path: "../fonts/NotoSans-Bold.ttf", weight: "700", style: "normal" },
+    ],
     display: "swap",
 });

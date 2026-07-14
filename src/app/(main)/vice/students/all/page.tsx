@@ -14,7 +14,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ViceStudentsAPI } from '@/data/vice-students.api';
 import type { ViceStudent, ViceDepartment, ViceLevel } from '@/types/vice/students';
-import { useLanguage } from '@/context/LanguageContext';
 import { appToast } from '@/hooks/useAppToast';
 import EditStudentModal from '@/components/vice/students/EditStudentModal';
 
@@ -23,15 +22,9 @@ const containerVariants = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100 } }
-};
-
 export default function AllStudentsPage() {
   const router = useRouter();
   const theme = useTheme();
-  const { t } = useLanguage();
   const primary = theme.palette.primary.main;
 
   const [students, setStudents] = useState<ViceStudent[]>([]);
@@ -67,8 +60,7 @@ export default function AllStudentsPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to unassign this student from their class?")) return;
     try {
-      // Instead of hard deleting, we unassign them by setting classId to 0
-      await ViceStudentsAPI.update(id, { classId: 0 });
+      await ViceStudentsAPI.assignClass(id, null);
       appToast.success("Student unassigned from class successfully");
       fetchStudents();
     } catch (e: unknown) {

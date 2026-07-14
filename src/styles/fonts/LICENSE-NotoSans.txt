@@ -1,0 +1,4 @@
+Noto Sans font files in this directory are licensed under the SIL Open Font License, Version 1.1.
+
+Copyright 2026 The Noto Project Authors. Source: system Noto Sans distribution.
+Full license text: https://openfontlicense.org/open-font-license-official-text/

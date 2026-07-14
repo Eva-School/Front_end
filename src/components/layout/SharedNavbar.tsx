@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import {
     AppBar,
     Toolbar,
@@ -13,7 +13,7 @@ import {
     alpha,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -49,13 +49,6 @@ export default function SharedNavbar() {
         profileHref,
     } = navbarData;
 
-    const { scrollY } = useScroll();
-    const isScrolled = useTransform(scrollY, [0, 50], [false, true]);
-    const [scrolled, setScrolled] = useState(false);
-
-    useEffect(() => {
-        return isScrolled.onChange((v) => setScrolled(v));
-    }, [isScrolled]);
 
     const handleLogout = async () => {
         await logout();   
@@ -149,7 +142,16 @@ export default function SharedNavbar() {
                             />
                         </Box>
                         <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em', background: `linear-gradient(45deg, ${theme.palette.text.primary}, ${theme.palette.primary.main})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{title}</Typography>
+                            <Typography
+                                variant="h4"
+                                sx={{
+                                    color: theme.palette.primary.main,
+                                    fontWeight: 800,
+                                    letterSpacing: '-0.02em',
+                                }}
+                            >
+                                {title}
+                            </Typography>
                             {subtitle && (
                                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
                                     {subtitle}

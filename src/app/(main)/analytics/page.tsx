@@ -29,7 +29,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import SchoolIcon from "@mui/icons-material/School";
-import { useLanguage } from "@/context/LanguageContext";
+import { API_BASE_URL, secureFetch } from "@/config/api.config";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface SubjectStat {
@@ -58,49 +58,6 @@ interface AnalyticsData {
   classRankings: ClassRanking[];
   gradeDistribution: { label: string; count: number; color: string }[];
   monthlyTrend: { month: string; average: number }[];
-}
-
-// ─── Mock / API fallback data ─────────────────────────────────────────────────
-function buildMockData(): AnalyticsData {
-  return {
-    totalStudents: 487,
-    averageGrade: 78.4,
-    passRate: 91.2,
-    topPerformers: 64,
-    subjectStats: [
-      { subject: "Mathematics", average: 74, highest: 98, lowest: 42, passRate: 88, color: "#FFC600" },
-      { subject: "Science", average: 81, highest: 100, lowest: 55, passRate: 94, color: "#4CAF50" },
-      { subject: "English", average: 79, highest: 97, lowest: 48, passRate: 92, color: "#2196F3" },
-      { subject: "History", average: 83, highest: 99, lowest: 60, passRate: 96, color: "#9C27B0" },
-      { subject: "Arabic", average: 76, highest: 95, lowest: 40, passRate: 87, color: "#FF5722" },
-      { subject: "PE", average: 90, highest: 100, lowest: 70, passRate: 99, color: "#00BCD4" },
-    ],
-    classRankings: [
-      { rank: 1, className: "Class 10-A", average: 88.5, students: 32, trend: "up" },
-      { rank: 2, className: "Class 11-B", average: 85.2, students: 30, trend: "up" },
-      { rank: 3, className: "Class 10-C", average: 82.7, students: 31, trend: "stable" },
-      { rank: 4, className: "Class 9-A", average: 79.3, students: 28, trend: "down" },
-      { rank: 5, className: "Class 11-A", average: 77.8, students: 33, trend: "up" },
-    ],
-    gradeDistribution: [
-      { label: "A+ (90-100)", count: 64, color: "#4CAF50" },
-      { label: "A  (80-89)", count: 127, color: "#8BC34A" },
-      { label: "B  (70-79)", count: 158, color: "#FFC600" },
-      { label: "C  (60-69)", count: 89, color: "#FF9800" },
-      { label: "D  (50-59)", count: 35, color: "#FF5722" },
-      { label: "F  (0-49)", count: 14, color: "#F44336" },
-    ],
-    monthlyTrend: [
-      { month: "Sep", average: 73 },
-      { month: "Oct", average: 75 },
-      { month: "Nov", average: 74 },
-      { month: "Dec", average: 78 },
-      { month: "Jan", average: 77 },
-      { month: "Feb", average: 80 },
-      { month: "Mar", average: 79 },
-      { month: "Apr", average: 82 },
-    ],
-  };
 }
 
 // ─── Bar Chart ─────────────────────────────────────────────────────────────────
@@ -154,11 +111,36 @@ function LineChart({ data }: { data: { month: string; average: number }[] }) {
   const chartW = W - padding.left - padding.right;
   const chartH = H - padding.top - padding.bottom;
 
-  const min = Math.min(...data.map((d) => d.average)) - 5;
-  const max = Math.max(...data.map((d) => d.average)) + 5;
+  // A newly created academic year can have no recorded trend yet. Do not
+  // construct SVG paths from missing points in that valid empty state.
+  const validData = data.filter(
+    (item) => typeof item.month === "string" && Number.isFinite(item.average),
+  );
 
-  const points = data.map((d, i) => ({
-    x: padding.left + (i / (data.length - 1)) * chartW,
+  if (validData.length === 0) {
+    return (
+      <Box
+        sx={{
+          height: H,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: theme.palette.text.secondary,
+        }}
+      >
+        <Typography variant="body2">No grade trend data is available yet.</Typography>
+      </Box>
+    );
+  }
+
+  const min = Math.min(...validData.map((d) => d.average)) - 5;
+  const max = Math.max(...validData.map((d) => d.average)) + 5;
+
+  const points = validData.map((d, i) => ({
+    x:
+      validData.length === 1
+        ? padding.left + chartW / 2
+        : padding.left + (i / (validData.length - 1)) * chartW,
     y: padding.top + chartH - ((d.average - min) / (max - min)) * chartH,
     ...d,
   }));
@@ -351,24 +333,23 @@ function KPICard({
 // ─── Main Analytics Page ──────────────────────────────────────────────────────
 export default function AnalyticsDashboard() {
   const theme = useTheme();
-  const { t } = useLanguage();
   const primary = theme.palette.primary.main;
 
   const [year, setYear] = useState("2024-2025");
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    // Try backend endpoint; fall back to mock data
-    const API = process.env.NEXT_PUBLIC_API_URL || "https://evaschool.runasp.net/api";
-    fetch(`${API}/analytics/overview?year=${encodeURIComponent(year)}`, {
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json) => setData(json ?? buildMockData()))
-      .catch(() => setData(buildMockData()))
+    secureFetch<AnalyticsData>(`${API_BASE_URL}/analytics/overview?year=${encodeURIComponent(year)}`)
+      .then((json) => {
+        setData(json);
+        setError(null);
+      })
+      .catch((requestError: unknown) => {
+        setData(null);
+        setError(requestError instanceof Error ? requestError.message : "Analytics data could not be loaded.");
+      })
       .finally(() => setLoading(false));
   }, [year]);
 
@@ -427,7 +408,10 @@ export default function AnalyticsDashboard() {
             <Select
               value={year}
               label="Academic Year"
-              onChange={(e) => setYear(e.target.value)}
+              onChange={(e) => {
+                setLoading(true);
+                setYear(e.target.value);
+              }}
             >
               <MenuItem value="2024-2025">2024 – 2025</MenuItem>
               <MenuItem value="2025-2026">2025 – 2026</MenuItem>
@@ -439,6 +423,15 @@ export default function AnalyticsDashboard() {
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
           <CircularProgress sx={{ color: primary }} />
+        </Box>
+      ) : !data ? (
+        <Box sx={{ py: 10, textAlign: "center" }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+            Analytics are unavailable
+          </Typography>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+            {error ?? "No analytics data is available for this academic year."}
+          </Typography>
         </Box>
       ) : (
         <>

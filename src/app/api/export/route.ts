@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+type StudentReport = {
+  studentName: string;
+  studentId: string;
+  className: string;
+  year: string;
+  grades: { subject: string; q1: number; q2: number; q3: number; q4: number; final: number; average: number }[];
+};
+
 // ─── Helper: build styled HTML report ────────────────────────────────────────
 function buildReportHTML(data: {
   studentName: string;
@@ -135,83 +143,52 @@ function buildReportHTML(data: {
 </html>`;
 }
 
-// ─── Mock grade data ──────────────────────────────────────────────────────────
-function buildMockGrades() {
-  const subjects = ["Mathematics", "Science", "English", "History", "Arabic", "PE"];
-  return subjects.map((s) => {
-    const scores = Array.from({ length: 4 }, () => Math.round(60 + Math.random() * 38));
-    const final  = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length + (Math.random() * 6 - 3));
-    return {
-      subject: s,
-      q1: scores[0], q2: scores[1], q3: scores[2], q4: scores[3],
-      final: Math.min(100, Math.max(0, final)),
-      average: Math.round((scores.reduce((a, b) => a + b, 0) / 4 + final) / 2),
-    };
-  });
-}
-
 // ─── GET /api/export?type=pdf&studentId=&year= ───────────────────────────────
 export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
-  const token = cookieStore.get("access_token")?.value;
+  const authorization = request.headers.get("authorization");
+  const token = authorization?.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length)
+    : cookieStore.get("access_token")?.value;
 
   if (!token) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   const { searchParams } = request.nextUrl;
-  const exportType = searchParams.get("type")      ?? "html";
-  const studentId  = searchParams.get("studentId") ?? "self";
   const year       = searchParams.get("year")      ?? "2024-2025";
-
-  const API = process.env.NEXT_PUBLIC_API_URL ?? "https://evaschool.runasp.net/api";
-
-  // Try real backend
-  let grades = null;
-  let studentInfo = { name: "Student Name", id: studentId, className: "Class 10-A" };
+  const API = (process.env.BACKEND_API_URL ?? "https://evaschool.runasp.net/api").replace(/\/+$/, "");
 
   try {
-    const [gradesRes, profileRes] = await Promise.all([
-      fetch(`${API}/student/grades?year=${year}&studentId=${studentId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      }),
-      fetch(`${API}/student/profile?studentId=${studentId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      }),
-    ]);
-
-    if (gradesRes.ok) grades = await gradesRes.json();
-    if (profileRes.ok) {
-      const prof = await profileRes.json();
-      studentInfo = {
-        name: `${prof.firstName ?? ""} ${prof.lastName ?? ""}`.trim() || studentInfo.name,
-        id: prof.studentId ?? studentId,
-        className: prof.className ?? studentInfo.className,
-      };
+    const response = await fetch(`${API}/student/report?year=${encodeURIComponent(year)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return new NextResponse(await response.text(), {
+        status: response.status,
+        headers: { "Content-Type": response.headers.get("content-type") ?? "application/json" },
+      });
     }
+    const report = (await response.json()) as StudentReport;
+    const reportData = {
+      studentName: report.studentName,
+      studentId: report.studentId,
+      className: report.className,
+      year: report.year,
+      grades: report.grades,
+      generatedAt: new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }),
+    };
+
+    const html = buildReportHTML(reportData);
+    return new NextResponse(html, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": `inline; filename="grade-report-${report.studentId}-${report.year}.html"`,
+        "Cache-Control": "no-store",
+      },
+    });
   } catch {
-    // use fallback
+    return NextResponse.json({ message: "Report service is unavailable." }, { status: 503 });
   }
-
-  const reportData = {
-    studentName: studentInfo.name,
-    studentId:   studentInfo.id,
-    className:   studentInfo.className,
-    year,
-    grades:      grades ?? buildMockGrades(),
-    generatedAt: new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }),
-  };
-
-  const html = buildReportHTML(reportData);
-
-  // Return as HTML (browser can print-to-PDF)
-  return new NextResponse(html, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Content-Disposition": `inline; filename="grade-report-${studentId}-${year}.html"`,
-      "Cache-Control": "no-store",
-    },
-  });
 }

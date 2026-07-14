@@ -126,7 +126,7 @@ export default function ViceTeachersPage() {
                 );
                 setIsLoadingTeachers(false);
             });
-    }, []);
+    }, [t]);
 
 
     const loadTeachers = async () => {
@@ -166,7 +166,7 @@ export default function ViceTeachersPage() {
                 );
                 setIsLoadingSubjects(false);
             });
-    }, [selectedLevel]);
+    }, [selectedLevel, t]);
 
     useEffect(() => {
         if (!selectedYear) {
@@ -188,7 +188,7 @@ export default function ViceTeachersPage() {
                 );
                 setIsLoadingClasses(false);
             });
-    }, [selectedYear]);
+    }, [selectedYear, t]);
 
     /* ===================== HANDLERS ===================== */
     const toggleClassSelection = (classId: number) => {
@@ -412,7 +412,10 @@ export default function ViceTeachersPage() {
             setSubjectName("");
             setSubjectType("academic");
             setSubjectDialogError(null);
-            setSubjects(await SubjectsAPI.getByYear(selectedYear));
+            // Subject endpoints are filtered by education stage, not academic-year label.
+            if (selectedLevel) {
+                setSubjects(await SubjectsAPI.getByYear(selectedLevel));
+            }
             appToast.success(t("teachers.saveSubject", "Subject saved!"));
         } catch (error) {
             console.error("Failed to create subject:", error);

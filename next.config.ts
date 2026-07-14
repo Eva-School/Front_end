@@ -1,12 +1,14 @@
 import type { NextConfig } from "next";
 
+const backendApiUrl = process.env.BACKEND_API_URL ?? "https://evaschool.runasp.net/api";
+
 const nextConfig: NextConfig = {
   turbopack: {},
   async rewrites() {
     return [
       {
         source: "/backend-api/:path*",
-        destination: "https://evaschool.runasp.net/api/:path*",
+        destination: `${backendApiUrl.replace(/\/+$/, "")}/:path*`,
       },
     ];
   },
@@ -21,4 +23,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-

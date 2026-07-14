@@ -67,6 +67,27 @@ interface TeacherDashboardRow {
   classes?: Array<{ classId?: string | number; className?: string }>;
 }
 
+type ApiRecord = Record<string, unknown>;
+
+const isApiRecord = (value: unknown): value is ApiRecord =>
+  typeof value === "object" && value !== null;
+
+const getApiRecordList = (value: unknown, keys: string[]): ApiRecord[] => {
+  if (Array.isArray(value)) return value.filter(isApiRecord);
+  if (!isApiRecord(value)) return [];
+  for (const key of keys) {
+    const candidate = value[key];
+    if (Array.isArray(candidate)) return candidate.filter(isApiRecord);
+  }
+  return [];
+};
+
+const getIdentifier = (value: unknown, fallback: string | number = 0): string | number =>
+  typeof value === "string" || typeof value === "number" ? value : fallback;
+
+const getString = (value: unknown, fallback: string): string =>
+  typeof value === "string" ? value : fallback;
+
 const isNotFoundError = (error: unknown): boolean =>
   error instanceof Error && error.message.includes("HTTP 404");
 
@@ -129,7 +150,7 @@ const normalizeDashboardRows = (rows: TeacherDashboardRow[]): TeacherDashboardYe
   });
 
   return Array.from(levelsMap.entries())
-    .filter(([_, classMap]) => classMap.size > 0)
+    .filter(([, classMap]) => classMap.size > 0)
     .map(([level, classMap]) => ({
       yearId: level,
       classes: Array.from(classMap.entries()).map(([classId, className]) => ({
@@ -247,7 +268,7 @@ export async function getTeacherClassesGrouped(year: string): Promise<SubjectWit
   let subjects: TeacherSubject[] = [];
   try {
     subjects = await getTeacherSubjectsByYear(year);
-  } catch (e) {
+  } catch {
     // Ignore error, we will try the fallback
   }
 
@@ -259,24 +280,19 @@ export async function getTeacherClassesGrouped(year: string): Promise<SubjectWit
         const payload = await secureFetch(
           `${API_BASE_URL}/teacher/classes?year=${encodeURIComponent(year)}&subject=${encodeURIComponent(sub.subjectName)}`
         );
-        let classes: any[] = [];
-        if (Array.isArray(payload)) classes = payload;
-        else if (payload && typeof payload === 'object') {
-          const inner = (payload as any).value ?? (payload as any).data ?? (payload as any).classes;
-          if (Array.isArray(inner)) classes = inner;
-        }
+        const classes = getApiRecordList(payload, ["value", "data", "classes"]);
 
         if (classes.length > 0) {
           grouped.push({
             subjectId: sub.id,
             subjectName: sub.subjectName,
             classes: classes.map((cls) => ({
-              classId: cls.classId ?? cls.id ?? 0,
-              className: cls.className ?? cls.name ?? "Unknown Class"
+              classId: getIdentifier(cls.classId ?? cls.id),
+              className: getString(cls.className ?? cls.name, "Unknown Class")
             }))
           });
         }
-      } catch (e) {
+      } catch {
          // If a specific subject fails (e.g. 404 or 400), we just skip it and continue to the next
       }
     }
@@ -289,7 +305,7 @@ export async function getTeacherClassesGrouped(year: string): Promise<SubjectWit
   try {
     const rows = await tryFetchDashboardRows();
     if (rows) {
-      const classesForYear: any[] = [];
+      const classesForYear: Array<{ classId?: string | number; className?: string }> = [];
       const seenClasses = new Set<string>();
 
       rows.forEach(row => {
@@ -318,13 +334,13 @@ export async function getTeacherClassesGrouped(year: string): Promise<SubjectWit
           subjectId: subjects[0]?.id ?? 0,
           subjectName: subjects[0]?.subjectName ?? "Assigned Classes",
           classes: classesForYear.map(cls => ({
-            classId: cls.classId ?? 0,
-            className: cls.className ?? "Unknown Class"
+            classId: getIdentifier(cls.classId),
+            className: getString(cls.className, "Unknown Class")
           }))
         }];
       }
     }
-  } catch (e) {
+  } catch {
     // Ignore fallback errors
   }
 
@@ -470,7 +486,7 @@ export async function pushNotification(notification: {
   targetRole?: string;
 }): Promise<void> {
   try {
-    await fetch("/api/notifications", {
+    await secureFetch("/api/notifications", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(notification),

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 export interface StudentRanking {
   rank: number;
@@ -12,29 +11,10 @@ export interface StudentRanking {
   badge?: "gold" | "silver" | "bronze";
 }
 
-function buildMockRankings(classId?: string, year?: string): StudentRanking[] {
-  const names = [
-    "Ahmed Al-Rashidi", "Fatima Al-Zahra", "Omar Hassan",
-    "Nora Al-Salem", "Khalid Ibrahim", "Sara Mahmoud",
-    "Yousef Al-Amin", "Mariam Khalil", "Ali Al-Farsi", "Hind Al-Nasser",
-  ];
-
-  return names.map((name, i) => ({
-    rank: i + 1,
-    studentId: `STU-${1000 + i}`,
-    name,
-    className: classId ?? `Class 10-${String.fromCharCode(65 + (i % 3))}`,
-    average: Math.round(95 - i * 2.8 + Math.random() * 2),
-    totalGrades: Math.floor(20 + Math.random() * 10),
-    trend: (["up", "stable", "down", "up", "up", "stable", "down", "up", "stable", "up"] as const)[i],
-    badge: i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : undefined,
-  }));
-}
-
 // ─── GET /api/rankings?year=&classId=&limit= ──────────────────────────────────
 export async function GET(request: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("access_token")?.value;
+  const authorization = request.headers.get("authorization");
+  const token = authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length) : null;
 
   if (!token) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -45,7 +25,7 @@ export async function GET(request: NextRequest) {
   const classId = searchParams.get("classId") ?? undefined;
   const limit   = parseInt(searchParams.get("limit") ?? "10");
 
-  const API = process.env.NEXT_PUBLIC_API_URL ?? "https://evaschool.runasp.net/api";
+  const API = (process.env.BACKEND_API_URL ?? "https://evaschool.runasp.net/api").replace(/\/+$/, "");
 
   try {
     const params = new URLSearchParams({ year, limit: String(limit) });
@@ -59,14 +39,12 @@ export async function GET(request: NextRequest) {
       cache: "no-store",
     });
 
-    if (upstream.ok) {
-      const data = await upstream.json();
-      return NextResponse.json(data);
-    }
+    const contentType = upstream.headers.get("content-type") ?? "application/json";
+    return new NextResponse(await upstream.text(), {
+      status: upstream.status,
+      headers: { "Content-Type": contentType },
+    });
   } catch {
-    // fall through
+    return NextResponse.json({ message: "Rankings service is unavailable." }, { status: 503 });
   }
-
-  const rankings = buildMockRankings(classId, year).slice(0, limit);
-  return NextResponse.json({ rankings, total: rankings.length, year, classId: classId ?? "all" });
 }

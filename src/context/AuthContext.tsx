@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setLoading(true);
             const me = await authService.getMe();
             setUser(me);
-        } catch (error) {
+        } catch {
             setUser(null);
         } finally {
             setLoading(false);
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         try {
             // Login and get tokens (tokens are stored automatically in authService)
-            const loginResponse = await authService.login({
+            await authService.login({
                 username,
                 password,
             });

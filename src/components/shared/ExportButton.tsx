@@ -9,6 +9,7 @@ import DownloadIcon      from "@mui/icons-material/Download";
 import PictureAsPdfIcon  from "@mui/icons-material/PictureAsPdf";
 import PrintIcon         from "@mui/icons-material/Print";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { tokenStorage } from "@/utils/token-storage";
 
 interface ExportButtonProps {
   studentId?: string;
@@ -40,7 +41,10 @@ export default function ExportButton({
     setLoading(true);
     try {
       const url = `/api/export?type=html&studentId=${studentId}&year=${encodeURIComponent(year)}`;
-      const res = await fetch(url);
+      const accessToken = tokenStorage.getAccessToken();
+      const res = await fetch(url, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      });
       if (!res.ok) throw new Error("Export failed");
 
       const html  = await res.text();
@@ -56,7 +60,7 @@ export default function ExportButton({
         }
       } else {
         // PDF: open in new tab — user can use browser's Save as PDF
-        const win = window.open(blobUrl, "_blank");
+        window.open(blobUrl, "_blank");
         setToast({
           open: true,
           msg: "Report opened! Use Ctrl+P → Save as PDF to download.",

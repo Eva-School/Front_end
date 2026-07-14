@@ -16,8 +16,14 @@ import type {
   FinalGradesResponse,
   JadaratGradesResponse,
 } from "@/types/Student-api/grades";
+import { API_BASE_URL, secureFetch } from "@/config/api.config";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://evaschool.runasp.net/api";
+type ListEnvelope<T> = T[] | { cards?: T[]; years?: T[]; grades?: T[]; data?: T[] };
+
+const getList = <T>(value: ListEnvelope<T>, key: "cards" | "years" | "grades"): T[] => {
+  if (Array.isArray(value)) return value;
+  return value[key] ?? value.data ?? [];
+};
 
 export interface StudentProfileResponse {
   name: string;
@@ -32,18 +38,8 @@ export interface StudentProfileResponse {
  * Used on /student page to render dynamic cards (Quarter, Final, Competencies, etc.)
  */
 export async function getStudentCards(): Promise<StudentCardApi[]> {
-  const response = await fetch(`${API_BASE_URL}/student/cards`, {
-    method: "GET",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to load student cards");
-  }
-
-  const data = await response.json();
-  return Array.isArray(data) ? data : data.cards ?? data.data ?? [];
+  const data = await secureFetch(`${API_BASE_URL}/student/cards`) as ListEnvelope<StudentCardApi>;
+  return getList(data, "cards");
 }
 
 /**
@@ -51,53 +47,26 @@ export async function getStudentCards(): Promise<StudentCardApi[]> {
  * Optional: backend can provide this from /auth/me or a dedicated endpoint.
  */
 export async function getStudentProfile(): Promise<StudentProfileResponse> {
-  const response = await fetch(`${API_BASE_URL}/student/profile`, {
-    method: "GET",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to load student profile");
-  }
-
-  return response.json();
+  return secureFetch(`${API_BASE_URL}/student/profile`) as Promise<StudentProfileResponse>;
 }
 
 /**
  * Fetch list of academic years (Junior, Wheeler, Senior) for Years page.
  */
 export async function getStudentYears(): Promise<YearOption[]> {
-  const response = await fetch(`${API_BASE_URL}/student/years`, {
-    method: "GET",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to load years");
-  }
-
-  const data = await response.json();
-  return Array.isArray(data) ? data : data.years ?? data.data ?? [];
+  const data = await secureFetch(`${API_BASE_URL}/student/years`) as ListEnvelope<YearOption>;
+  return getList(data, "years");
 }
 
 /**
  * Fetch quarter grades for a given academic year.
  */
 export async function getQuarterGrades(year: StudentYearKey): Promise<QuarterGradesResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/student/grades/quarter?year=${encodeURIComponent(year)}`,
-    { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to load quarter grades");
-  }
-
-  const data = await response.json();
+  const data = await secureFetch(
+    `${API_BASE_URL}/student/grades/quarter?year=${encodeURIComponent(year)}`
+  ) as Partial<QuarterGradesResponse> & ListEnvelope<QuarterGradesResponse["grades"][number]>;
   return {
-    grades: data.grades ?? data ?? [],
+    grades: Array.isArray(data) ? data : data.grades ?? data.data ?? [],
     averageGrade: data.averageGrade ?? "—",
     year: data.year ?? year,
   };
@@ -107,18 +76,11 @@ export async function getQuarterGrades(year: StudentYearKey): Promise<QuarterGra
  * Fetch final grades for a given academic year.
  */
 export async function getFinalGrades(year: StudentYearKey): Promise<FinalGradesResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/student/grades/final?year=${encodeURIComponent(year)}`,
-    { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to load final grades");
-  }
-
-  const data = await response.json();
+  const data = await secureFetch(
+    `${API_BASE_URL}/student/grades/final?year=${encodeURIComponent(year)}`
+  ) as Partial<FinalGradesResponse> & ListEnvelope<FinalGradesResponse["grades"][number]>;
   return {
-    grades: data.grades ?? data ?? [],
+    grades: Array.isArray(data) ? data : data.grades ?? data.data ?? [],
     averageGrade: data.averageGrade ?? "—",
     year: data.year ?? year,
   };
@@ -128,18 +90,11 @@ export async function getFinalGrades(year: StudentYearKey): Promise<FinalGradesR
  * Fetch competencies (jadarat) grades for a given academic year.
  */
 export async function getJadaratGrades(year: StudentYearKey): Promise<JadaratGradesResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/student/grades/jadarat?year=${encodeURIComponent(year)}`,
-    { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to load jadarat grades");
-  }
-
-  const data = await response.json();
+  const data = await secureFetch(
+    `${API_BASE_URL}/student/grades/jadarat?year=${encodeURIComponent(year)}`
+  ) as Partial<JadaratGradesResponse> & ListEnvelope<JadaratGradesResponse["grades"][number]>;
   return {
-    grades: data.grades ?? data ?? [],
+    grades: Array.isArray(data) ? data : data.grades ?? data.data ?? [],
     averageGrade: data.averageGrade,
     year: data.year ?? year,
   };

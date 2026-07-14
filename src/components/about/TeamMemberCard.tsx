@@ -25,7 +25,6 @@ export default function TeamMemberCard({ developer }: TeamMemberCardProps) {
   const theme = useTheme();
   const primary = theme.palette.primary.main;
   const secondary = theme.palette.secondary?.main || primary;
-  const primaryLight = alpha(primary, 0.12);
   const [imgError, setImgError] = useState(false);
   const showImage = developer.image && !imgError;
 

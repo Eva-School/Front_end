@@ -1,9 +1,9 @@
 
 import { ThemeOptions } from "@mui/material/styles";
-import { ibmPlexSans } from "./font";
+import { notoSans } from "./font";
 
 export const typography: ThemeOptions["typography"] = {
-    fontFamily: ibmPlexSans.style.fontFamily,
+    fontFamily: notoSans.style.fontFamily,
     h1: {
         fontWeight: 700,
         fontSize: "clamp(0.6rem, 2vw, 1.1rem)",

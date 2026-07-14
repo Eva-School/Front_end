@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, Container, Typography, Stack, Card, Button,
-    Divider, Dialog, IconButton, alpha, Skeleton, Chip, Avatar,
+    Divider, Dialog, IconButton, alpha, Skeleton, Chip, Avatar, Alert,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
@@ -19,6 +19,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SchoolIcon from '@mui/icons-material/School';
+import { API_BASE_URL, secureFetch } from '@/config/api.config';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -132,9 +133,6 @@ function ActivityRow({ item }: { item: ActivityItem }) {
 
     return (
         <Box
-            component={motion.div}
-            initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0 }}
             sx={{
                 display: 'flex', alignItems: 'center', gap: 2,
                 p: 2, borderRadius: '16px',
@@ -186,57 +184,20 @@ export default function ViceGradesDashboard() {
     const [openTermModal, setOpenTermModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<DashboardData | null>(null);
-
-    const API = process.env.NEXT_PUBLIC_API_URL || 'https://evaschool.runasp.net/api';
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const token = typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : null;
-
-        fetch(`${API}/vice/grades/dashboard`, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            credentials: 'include',
-        })
-            .then((r) => (r.ok ? r.json() : null))
+        secureFetch<DashboardData>(`${API_BASE_URL}/vice/grades/dashboard`)
             .then((json) => {
-                if (json) {
-                    setData(json);
-                } else {
-                    // Fallback mock data while backend is being implemented
-                    setData({
-                        totalStudents: 320,
-                        totalSubjects: 18,
-                        quarterGradesPending: 42,
-                        finalGradesPending: 8,
-                        lastUpdated: new Date().toISOString(),
-                        recentActivity: [
-                            { id: '1', teacherName: 'Mr. Ahmed Ali', action: 'Submitted quarter grades', subject: 'Mathematics', className: '10A', level: 'senior', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-                            { id: '2', teacherName: 'Ms. Sara Mohammed', action: 'Updated final grades', subject: 'Science', className: '9B', level: 'wheeler', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-                            { id: '3', teacherName: 'Mr. Khalid Hassan', action: 'Submitted quarter grades', subject: 'Arabic', className: '8C', level: 'junior', timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString() },
-                            { id: '4', teacherName: 'Ms. Nora Saad', action: 'Submitted quarter grades', subject: 'English', className: '11A', level: 'senior', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString() },
-                        ],
-                    });
-                }
+                setData(json);
+                setError(null);
             })
-            .catch(() => {
-                setData({
-                    totalStudents: 320,
-                    totalSubjects: 18,
-                    quarterGradesPending: 42,
-                    finalGradesPending: 8,
-                    lastUpdated: new Date().toISOString(),
-                    recentActivity: [
-                        { id: '1', teacherName: 'Mr. Ahmed Ali', action: 'Submitted quarter grades', subject: 'Mathematics', className: '10A', level: 'senior', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-                        { id: '2', teacherName: 'Ms. Sara Mohammed', action: 'Updated final grades', subject: 'Science', className: '9B', level: 'wheeler', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-                        { id: '3', teacherName: 'Mr. Khalid Hassan', action: 'Submitted quarter grades', subject: 'Arabic', className: '8C', level: 'junior', timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString() },
-                        { id: '4', teacherName: 'Ms. Nora Saad', action: 'Submitted quarter grades', subject: 'English', className: '11A', level: 'senior', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString() },
-                    ],
-                });
+            .catch((requestError: unknown) => {
+                setData(null);
+                setError(requestError instanceof Error ? requestError.message : 'Unable to load dashboard data.');
             })
             .finally(() => setLoading(false));
-    }, [API]);
+    }, []);
 
     const kpiCards = [
         { icon: <PeopleAltIcon />, value: data?.totalStudents ?? 0, label: 'Total Students', color: primary },
@@ -264,11 +225,8 @@ export default function ViceGradesDashboard() {
                 py: { xs: 3, md: 5 },
             }}
         >
-            {/* ── Animated Background Blobs ── */}
+            {/* Decorative background surfaces remain static to avoid perpetual repainting. */}
             <Box
-                component={motion.div}
-                animate={{ scale: [1, 1.08, 1], rotate: [0, 8, 0] }}
-                transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
                 sx={{
                     position: 'absolute', top: '-15%', right: '-10%',
                     width: '60%', height: '60%',
@@ -277,9 +235,6 @@ export default function ViceGradesDashboard() {
                 }}
             />
             <Box
-                component={motion.div}
-                animate={{ scale: [1, 1.12, 1], rotate: [0, -12, 0] }}
-                transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
                 sx={{
                     position: 'absolute', bottom: '5%', left: '-8%',
                     width: '50%', height: '50%',
@@ -289,6 +244,7 @@ export default function ViceGradesDashboard() {
             />
 
             <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+                {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
                 <Box
                     component={motion.div}
                     variants={containerVariants}
@@ -505,7 +461,7 @@ export default function ViceGradesDashboard() {
                             <Divider sx={{ mb: 2, borderColor: alpha(theme.palette.divider, 0.08) }} />
 
                             <Stack spacing={0.5} flex={1}>
-                                <AnimatePresence>
+                                <>
                                     {loading ? (
                                         Array.from({ length: 4 }).map((_, i) => (
                                             <Box key={i} sx={{ display: 'flex', gap: 2, p: 1.5, alignItems: 'center' }}>
@@ -527,7 +483,7 @@ export default function ViceGradesDashboard() {
                                             </Typography>
                                         </Box>
                                     )}
-                                </AnimatePresence>
+                                </>
                             </Stack>
                         </Card>
                     </Box>

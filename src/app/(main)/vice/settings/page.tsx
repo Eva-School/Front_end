@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Box, Container, Typography, Card, Stack,
     Button, Select, MenuItem, FormControl, InputLabel,
@@ -11,8 +11,10 @@ import { motion } from 'framer-motion';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SaveIcon from '@mui/icons-material/Save';
 
-import { useLanguage } from '@/context/LanguageContext';
 import { appToast } from '@/hooks/useAppToast';
+import { API_BASE_URL, secureFetch } from '@/config/api.config';
+
+type YearMappings = { junior: string; wheeler: string; senior: string };
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -25,7 +27,6 @@ const itemVariants = {
 };
 
 export default function ViceSettingsPage() {
-    const { t } = useLanguage();
     const theme = useTheme();
 
     const primary = theme.palette.primary.main;
@@ -40,7 +41,6 @@ export default function ViceSettingsPage() {
         p: 4,
     };
 
-    // Mock state for mappings
     const [mappings, setMappings] = useState({
         junior: '2024-2025',
         wheeler: '2024-2025',
@@ -48,13 +48,32 @@ export default function ViceSettingsPage() {
     });
     const [saving, setSaving] = useState(false);
 
+    useEffect(() => {
+        secureFetch<YearMappings>(`${API_BASE_URL}/settings/year-mappings`)
+            .then((data) => {
+                if (data.junior && data.wheeler && data.senior) {
+                    queueMicrotask(() => setMappings(data));
+                }
+            })
+            .catch(() => {
+                appToast.error('Unable to load academic-year mappings.');
+            });
+    }, []);
+
     const handleSave = async () => {
         setSaving(true);
-        // Simulate API call to the proposed /api/Settings/YearMappings
-        setTimeout(() => {
+        try {
+            const updated = await secureFetch<YearMappings>(`${API_BASE_URL}/settings/year-mappings`, {
+                method: 'PUT',
+                body: JSON.stringify(mappings),
+            });
+            setMappings(updated);
             appToast.success('Year mappings updated successfully!');
+        } catch (error) {
+            appToast.error(error instanceof Error ? error.message : 'Unable to update year mappings.');
+        } finally {
             setSaving(false);
-        }, 1000);
+        }
     };
 
     const academicYears = ["2024-2025", "2025-2026", "2026-2027", "2027-2028"];
@@ -105,7 +124,7 @@ export default function ViceSettingsPage() {
                             </Typography>
 
                             <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
-                                Note: These settings are currently in mockup mode until the backend implements the proposed <strong>/api/Settings/YearMappings</strong> endpoints.
+                                Changes update the active academic year for each educational level.
                             </Alert>
 
                             <Stack spacing={3}>

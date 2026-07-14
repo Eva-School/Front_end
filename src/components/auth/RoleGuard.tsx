@@ -28,7 +28,7 @@ export default function RoleGuard({ children, allowedRoles, fallbackRoute = "/lo
                         setIsAuthorized(false);
                     }
                 }
-            } catch (error) {
+            } catch {
                 if (isMounted) {
                     setIsAuthorized(false);
                 }

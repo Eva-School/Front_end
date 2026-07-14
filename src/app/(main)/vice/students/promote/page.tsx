@@ -12,7 +12,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SaveIcon from '@mui/icons-material/Save';
 
-import { useLanguage } from '@/context/LanguageContext';
 import { appToast } from '@/hooks/useAppToast';
 import { ViceStudentsAPI } from '@/data/vice-students.api';
 import type { ViceStudent, ViceDepartment, ViceLevel } from '@/types/vice/students';
@@ -34,7 +33,6 @@ const LEVELS: { value: ViceLevel; label: string }[] = [
 ];
 
 export default function PromoteStudentsPage() {
-  const { t } = useLanguage();
   const theme = useTheme();
   
   const primary = theme.palette.primary.main;
@@ -100,20 +98,12 @@ export default function PromoteStudentsPage() {
     setPromoting(true);
     setError(null);
     try {
-      // We process all students in the list.
-      // Selected get new year & classId: 0
-      // Unselected get classId: 0 only (stay in same year)
-      
-      const promises = students.map(student => {
-        const isSelected = selectedStudentIds.has(student.id);
-        const updatePayload = {
-          classId: 0,
-          ...(isSelected ? { year: targetLevel } : {})
-        };
-        return ViceStudentsAPI.update(student.id, updatePayload);
+      await ViceStudentsAPI.promote({
+        studentIds: Array.from(selectedStudentIds),
+        sourceLevel,
+        targetLevel,
+        department: sourceDept,
       });
-
-      await Promise.all(promises);
       appToast.success('End of year promotion completed successfully');
       fetchStudents(); // Refresh list
     } catch (e: unknown) {

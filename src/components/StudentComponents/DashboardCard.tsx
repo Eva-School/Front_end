@@ -1,8 +1,7 @@
 import React from "react";
-import { Card, CardContent, Typography, Box, Divider } from "@mui/material";
+import { Card, Typography, Box, Divider } from "@mui/material";
 import BookIcon from "@/icons/book.svg";
 import FileIcon from "@/icons/file.svg";
-import Image from 'next/image';
 import { IconType } from "@/types/Icons";
 interface DashboardCardProps {
   icon: IconType;
@@ -87,9 +86,7 @@ function DashboardCard({
 }
 
 export default function StudentDashboard() {
-  const handleCardClick = (route: string) => {
-
-  };
+  const handleCardClick = () => {};
 
   return (
     <Box>
@@ -106,21 +103,21 @@ export default function StudentDashboard() {
           icon={BookIcon}
           title="Quarter Grades"
           description="View your quarterly performance across all subjects"
-          onClick={() => handleCardClick('/quarter-grades')}
+          onClick={handleCardClick}
         />
 
         <DashboardCard
           icon={FileIcon}
           title="Final Grades"
           description="View your semester final exam grades"
-          onClick={() => handleCardClick('/final-grades')}
+          onClick={handleCardClick}
         />
 
         <DashboardCard
           icon={FileIcon}
           title="Competencies Grades"
           description="View your specialization competency grades"
-          onClick={() => handleCardClick('/competencies-grades')}
+          onClick={handleCardClick}
         />
       </Box>
     </Box>

@@ -6,7 +6,6 @@ import { Box, CircularProgress, Typography, useTheme, alpha } from "@mui/materia
 import { motion, AnimatePresence } from "framer-motion";
 import CategoryCard from "@/components/StudentComponents/CategoryCard";
 import { useStudentYear } from "@/context/StudentYearContext";
-import { studentYearsFallback } from "@/data/Student/years";
 import { studentService } from "@/services/student.service";
 import type { YearOption } from "@/types/Student-api/grades";
 import { useLanguage } from "@/context/LanguageContext";
@@ -18,16 +17,19 @@ export default function StudentYearsPage() {
   const { setSelectedYear } = useStudentYear();
   const [years, setYears] = useState<YearOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
         const data = await studentService.getStudentYears();
-        if (!cancelled && data?.length) setYears(data);
-        else if (!cancelled) setYears(studentYearsFallback);
-      } catch {
-        if (!cancelled) setYears(studentYearsFallback);
+        if (!cancelled) setYears(data ?? []);
+      } catch (requestError) {
+        if (!cancelled) {
+          setYears([]);
+          setError(requestError instanceof Error ? requestError.message : "Academic years could not be loaded.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -142,6 +144,14 @@ export default function StudentYearsPage() {
                 sx={{ display: "flex", justifyContent: "center", py: 8 }}
             >
                 <CircularProgress size={60} thickness={4} sx={{ color: theme.palette.primary.main }} />
+            </Box>
+            ) : error ? (
+            <Box sx={{ py: 8, textAlign: "center" }}>
+                <Typography variant="body1" color="error">{error}</Typography>
+            </Box>
+            ) : years.length === 0 ? (
+            <Box sx={{ py: 8, textAlign: "center" }}>
+                <Typography variant="body1" color="text.secondary">No academic years are available.</Typography>
             </Box>
             ) : (
             <Box

@@ -11,7 +11,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { secureFetch } from '@/config/api.config';
+import { API_BASE_URL, secureFetch } from '@/config/api.config';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -29,6 +29,21 @@ interface SubjectItem {
     studentsCount?: number;
     gradeType?: 'academic' | 'competency';
 }
+
+type ApiRecord = Record<string, unknown>;
+
+const isApiRecord = (value: unknown): value is ApiRecord =>
+    typeof value === 'object' && value !== null;
+
+const getApiList = (value: unknown): ApiRecord[] => {
+    if (Array.isArray(value)) return value.filter(isApiRecord);
+    if (!isApiRecord(value)) return [];
+    for (const key of ['value', 'data', 'subjects']) {
+        const candidate = value[key];
+        if (Array.isArray(candidate)) return candidate.filter(isApiRecord);
+    }
+    return [];
+};
 
 const LEVEL_META: Record<string, { color: string; emoji: string }> = {
     junior:  { color: '#F59E0B', emoji: '🌱' },
@@ -56,31 +71,25 @@ export default function SubjectSelectionPage() {
     const [subjects, setSubjects] = useState<SubjectItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const API = process.env.NEXT_PUBLIC_API_URL || 'https://evaschool.runasp.net/api';
+    const API = API_BASE_URL;
 
     useEffect(() => {
         secureFetch(`${API}/Subjects?year=${encodeURIComponent(level)}`)
-            .then((data: any) => {
-                let list: any[] = [];
-                if (Array.isArray(data)) list = data;
-                else if (data && typeof data === 'object') {
-                    if (Array.isArray(data.value)) list = data.value;
-                    else if (Array.isArray(data.data)) list = data.data;
-                    else if (Array.isArray(data.subjects)) list = data.subjects;
-                }
+            .then((data) => {
+                const list = getApiList(data);
                 
                 if (list.length > 0) {
-                    setSubjects(list.map((s: any) => ({
+                    setSubjects(list.map((s) => ({
                         id: String(s.id ?? s.subjectId),
-                        name: s.subjectName ?? s.name ?? 'Unknown',
-                        gradeType: s.subjectName?.toLowerCase().includes('jadarat') ? 'competency' : 'academic'
+                        name: typeof (s.subjectName ?? s.name) === 'string' ? (s.subjectName ?? s.name) as string : 'Unknown',
+                        gradeType: typeof s.subjectName === 'string' && s.subjectName.toLowerCase().includes('jadarat') ? 'competency' : 'academic'
                     })));
                 } else {
                     setSubjects(FALLBACK_SUBJECTS);
                 }
             })
-            .catch((e) => {
-                console.error("Failed to fetch subjects:", e);
+            .catch((error) => {
+                console.error("Failed to fetch subjects:", error);
                 setSubjects(FALLBACK_SUBJECTS);
             })
             .finally(() => setLoading(false));

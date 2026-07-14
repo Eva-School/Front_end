@@ -4,8 +4,8 @@ import React, { Suspense, useEffect, useState, useCallback } from 'react';
 import {
     Box, Container, Typography, Stack, Card, alpha, Chip, Skeleton,
     Table, TableHead, TableBody, TableRow, TableCell, TableContainer,
-    Button, TextField, RadioGroup, FormControlLabel, Radio, Divider,
-    Alert, Snackbar, CircularProgress, IconButton
+    Button, TextField, RadioGroup, FormControlLabel, Radio,
+    Alert, Snackbar, CircularProgress
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,9 +14,9 @@ import SchoolIcon from '@mui/icons-material/School';
 import SaveIcon from '@mui/icons-material/Save';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { secureFetch } from '@/config/api.config';
+import { API_BASE_URL, secureFetch } from '@/config/api.config';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -38,11 +38,27 @@ interface StudentQuarterGrade {
     q4: number | null;
 }
 
-interface QuarterGradesResponse {
-    maxQuarterGrades: MaxQuarterGrades;
-    students: StudentQuarterGrade[];
-    classes?: string[];
-}
+type GradeValues = Pick<StudentQuarterGrade, 'q1' | 'q2' | 'q3' | 'q4'>;
+type ApiRecord = Record<string, unknown>;
+
+const isApiRecord = (value: unknown): value is ApiRecord =>
+    typeof value === 'object' && value !== null;
+
+const getApiList = (value: unknown, keys: string[]): ApiRecord[] => {
+    if (Array.isArray(value)) return value.filter(isApiRecord);
+    if (!isApiRecord(value)) return [];
+    for (const key of keys) {
+        const candidate = value[key];
+        if (Array.isArray(candidate)) return candidate.filter(isApiRecord);
+    }
+    return [];
+};
+
+const getNumberOrNull = (value: unknown): number | null =>
+    typeof value === 'number' && Number.isFinite(value) ? value : null;
+
+const getIdentifier = (value: unknown, fallback: string | number): string | number =>
+    typeof value === 'string' || typeof value === 'number' ? value : fallback;
 
 // ─── Meta ────────────────────────────────────────────────────────────────────
 
@@ -80,7 +96,7 @@ function QuarterSubjectGradesContent() {
     const [maxGrades, setMaxGrades] = useState<MaxQuarterGrades>({ q1: 25, q2: 25, q3: 25, q4: 25 });
     const [originalMaxGrades, setOriginalMaxGrades] = useState<MaxQuarterGrades>({ q1: 25, q2: 25, q3: 25, q4: 25 });
     const [students, setStudents] = useState<StudentQuarterGrade[]>([]);
-    const [localGrades, setLocalGrades] = useState<Record<string, { q1: number|null; q2: number|null; q3: number|null; q4: number|null }>>({});
+    const [localGrades, setLocalGrades] = useState<Record<string, GradeValues>>({});
     
     const [loading, setLoading] = useState(true);
     const [savingMax, setSavingMax] = useState(false);
@@ -89,69 +105,54 @@ function QuarterSubjectGradesContent() {
         open: false, msg: '', severity: 'success',
     });
 
-    const API = process.env.NEXT_PUBLIC_API_URL || 'https://evaschool.runasp.net/api';
-    const getToken = () => (typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : null);
+    const API = API_BASE_URL;
 
     const loadData = useCallback(async () => {
         setLoading(true);
 
         try {
-            // 1. Fetch available classes for this level
-            const classesData = await secureFetch(`${API}/Classes?yearId=${encodeURIComponent(level)}`) as any;
-            let classesList: any[] = [];
-            if (Array.isArray(classesData)) {
-                classesList = classesData;
-            } else if (classesData && typeof classesData === 'object') {
-                classesList = classesData.value ?? classesData.data ?? [];
-            }
-
-            // Map and filter available classes
-            const mappedClasses = classesList.map((c: any) => ({
-                id: c.classId ?? c.id,
-                name: c.className ?? c.name ?? `Class ${c.classId}`
+            const classesData = await secureFetch(`${API}/Classes?yearId=${encodeURIComponent(level)}`).catch(() => []);
+            const classesList = getApiList(classesData, ['value', 'data']);
+            const mappedClasses = classesList.map((c) => ({
+                id: getIdentifier(c.classId ?? c.id, ''),
+                name: typeof (c.className ?? c.name) === 'string' ? (c.className ?? c.name) as string : `Class ${String(c.classId ?? '')}`
             }));
             setAvailableClasses(mappedClasses);
 
-            // 2. Fetch students
-            let studentsList: any[] = [];
-            
-            // If a specific class is selected, fetch students for it
-            if (classId !== 'all') {
-                const stdData = await secureFetch(`${API}/Students?classId=${encodeURIComponent(classId)}`) as any;
-                const rawStudents = Array.isArray(stdData) ? stdData : (stdData.students ?? stdData.value ?? stdData.data ?? []);
-                studentsList = rawStudents.map((s: any) => ({ ...s, injectedClassId: classId }));
-            } else {
-                // If "all" is selected, fetch students for all mapped classes
-                const promises = mappedClasses.map(async (cls) => {
-                    try {
-                        const d = await secureFetch(`${API}/Students?classId=${encodeURIComponent(cls.id)}`) as any;
-                        const arr = Array.isArray(d) ? d : (d.students ?? d.value ?? d.data ?? []);
-                        return arr.map((s: any) => ({ ...s, injectedClassId: cls.id }));
-                    } catch {
-                        return [];
-                    }
-                });
-                const results = await Promise.all(promises);
-                studentsList = results.flat();
-            }
+            const params = new URLSearchParams({
+                level,
+                subjectId: String(Number(subjectId) || 0),
+                department,
+            });
+            if (classId !== 'all') params.set('classId', classId);
 
-            // Filter students by department if needed (assuming student names or some property indicates it, or we just show all if no dept field exists)
-            // Note: The backend /api/Students doesn't return department. We will display all students in the class.
+            const sheetData = await secureFetch(`${API}/vice/grades/quarter/students?${params.toString()}`);
+            const sheet = isApiRecord(sheetData) ? sheetData : {};
+            const max = isApiRecord(sheet.maxQuarterGrades) ? sheet.maxQuarterGrades : {};
+            const nextMaxGrades: MaxQuarterGrades = {
+                q1: getNumberOrNull(max.q1) ?? 25,
+                q2: getNumberOrNull(max.q2) ?? 25,
+                q3: getNumberOrNull(max.q3) ?? 25,
+                q4: getNumberOrNull(max.q4) ?? 25,
+            };
+            setMaxGrades(nextMaxGrades);
+            setOriginalMaxGrades(nextMaxGrades);
 
-            const formattedStudents: StudentQuarterGrade[] = studentsList.map((s: any) => ({
+            const studentsList = getApiList(sheet, ['students']);
+            const formattedStudents: StudentQuarterGrade[] = studentsList.map((s) => ({
                 studentId: String(s.studentId ?? s.id),
-                studentName: s.studentName ?? s.fullName ?? s.name ?? 'Unknown',
-                studentCode: s.studentCode ?? '',
-                classId: s.injectedClassId ?? classId,
-                q1: s.q1 ?? null,
-                q2: s.q2 ?? null,
-                q3: s.q3 ?? null,
-                q4: s.q4 ?? null,
+                studentName: typeof (s.studentName ?? s.fullName ?? s.name) === 'string' ? (s.studentName ?? s.fullName ?? s.name) as string : 'Unknown',
+                studentCode: typeof s.studentCode === 'string' ? s.studentCode : '',
+                classId: classId === 'all' ? '' : classId,
+                q1: getNumberOrNull(s.q1),
+                q2: getNumberOrNull(s.q2),
+                q3: getNumberOrNull(s.q3),
+                q4: getNumberOrNull(s.q4),
             }));
 
             setStudents(formattedStudents);
 
-            const initial: Record<string, any> = {};
+            const initial: Record<string, GradeValues> = {};
             formattedStudents.forEach((s) => { initial[s.studentId] = { q1: s.q1, q2: s.q2, q3: s.q3, q4: s.q4 }; });
             setLocalGrades(initial);
 
@@ -162,29 +163,20 @@ function QuarterSubjectGradesContent() {
         } finally {
             setLoading(false);
         }
-    }, [level, classId, API]);
+    }, [level, subjectId, department, classId, API]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
     const handleSaveMaxGrades = async () => {
         setSavingMax(true);
-        const token = getToken();
         try {
-            const r = await fetch(`${API}/vice/grades/quarter/subjects/${subjectId}/max-grades`, {
+            await secureFetch(`${API}/vice/grades/quarter/subjects/${subjectId}/max-grades`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ maxQuarterGrades: maxGrades }),
             });
-            if (r.ok) {
-                setOriginalMaxGrades(maxGrades);
-                setSnack({ open: true, msg: 'Maximum grades updated successfully!', severity: 'success' });
-            } else {
-                setSnack({ open: true, msg: 'Failed to update maximum grades.', severity: 'error' });
-            }
+            setOriginalMaxGrades(maxGrades);
+            setSnack({ open: true, msg: 'Maximum grades updated successfully!', severity: 'success' });
         } catch {
             setSnack({ open: true, msg: 'Network error. Please try again.', severity: 'error' });
         } finally {
@@ -194,7 +186,6 @@ function QuarterSubjectGradesContent() {
 
     const handleSaveStudents = async () => {
         setSavingStudents(true);
-        const token = getToken();
         
         // Find modified students
         const modifiedStudents = students.filter(student => {
@@ -213,43 +204,35 @@ function QuarterSubjectGradesContent() {
             return;
         }
 
+        if (classId === 'all' || !Number.isInteger(Number(classId))) {
+            setSnack({ open: true, msg: 'Select one class before saving grades.', severity: 'warning' });
+            setSavingStudents(false);
+            return;
+        }
+
         try {
-            let successCount = 0;
-            // Map modified to API requests
-            const promises = modifiedStudents.map(student => {
-                const current = localGrades[student.studentId];
-                // Calculate an approximate total grade or let backend do it
-                const grade = (current.q1 || 0) + (current.q2 || 0) + (current.q3 || 0) + (current.q4 || 0);
-
-                return fetch(`${API}/Grades`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    },
-                    body: JSON.stringify({
-                        classId: Number(student.classId),
-                        studentId: Number(student.studentId),
-                        subjectId: Number(subjectId) || 0,
-                        grade,
-                        q1: current.q1,
-                        q2: current.q2,
-                        q3: current.q3,
-                        q4: current.q4
+            await secureFetch(`${API}/vice/grades/quarter/students`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    level,
+                    subjectId: Number(subjectId),
+                    department,
+                    classId: Number(classId),
+                    students: modifiedStudents.map((student) => {
+                        const current = localGrades[student.studentId];
+                        return {
+                            studentId: student.studentId,
+                            q1: current.q1 ?? 0,
+                            q2: current.q2 ?? 0,
+                            q3: current.q3 ?? 0,
+                            q4: current.q4 ?? 0,
+                        };
                     }),
-                });
+                }),
             });
-
-            const results = await Promise.all(promises);
-            successCount = results.filter(r => r.ok).length;
-
-            if (successCount > 0) {
-                setSnack({ open: true, msg: `Saved grades for ${successCount} student(s) successfully!`, severity: 'success' });
-                // Re-sync local state with students array
-                setStudents(prev => prev.map(s => ({ ...s, ...localGrades[s.studentId] })));
-            } else {
-                setSnack({ open: true, msg: 'Failed to save student grades.', severity: 'error' });
-            }
+            setSnack({ open: true, msg: `Saved grades for ${modifiedStudents.length} student(s) successfully!`, severity: 'success' });
+            setStudents((previous) => previous.map((student) => ({ ...student, ...localGrades[student.studentId] })));
         } catch {
             setSnack({ open: true, msg: 'Network error. Please try again.', severity: 'error' });
         } finally {

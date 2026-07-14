@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Dialog, DialogContent, Box, Typography, TextField, Button, Alert } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import type { ViceDepartment, ViceLevel, ViceStudent } from '@/types/vice/students';
+import type { ViceStudent } from '@/types/vice/students';
 import { useLanguage } from '@/context/LanguageContext';
 import AccessibleIconButton from '@/components/a11y/AccessibleIconButton';
 
@@ -17,6 +17,11 @@ interface EditStudentModalProps {
         studentCode?: string;
     }) => Promise<void>;
 }
+
+type EditableViceStudent = ViceStudent & {
+    firstName?: string;
+    lastName?: string;
+};
 
 export default function EditStudentModal({ open, onClose, student, onSubmit }: EditStudentModalProps) {
     const { t } = useLanguage();
@@ -35,8 +40,9 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
             // Split name into first and last name for editing (since API returns full name or we can just send firstName/lastName)
             // Wait, the backend returns firstName and lastName inside ViceStudent if it's available, otherwise we split the full name.
             const nameParts = student.name.split(' ');
-            const fName = (student as any).firstName || nameParts[0] || '';
-            const lName = (student as any).lastName || nameParts.slice(1).join(' ') || '';
+            const editableStudent = student as EditableViceStudent;
+            const fName = editableStudent.firstName || nameParts[0] || '';
+            const lName = editableStudent.lastName || nameParts.slice(1).join(' ') || '';
 
             setForm({
                 firstName: fName,

@@ -18,6 +18,7 @@ import GradeIcon from "@mui/icons-material/Grade";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import InfoIcon from "@mui/icons-material/Info";
 import AlarmIcon from "@mui/icons-material/Alarm";
+import { secureFetch } from "@/config/api.config";
 
 interface Notification {
   id: string;
@@ -27,6 +28,11 @@ interface Notification {
   timestamp: string;
   read: boolean;
   priority: "low" | "medium" | "high";
+}
+
+interface NotificationsResponse {
+  notifications?: Notification[];
+  unreadCount?: number;
 }
 
 const TYPE_CONFIG = {
@@ -59,8 +65,7 @@ export default function NotificationBell() {
 
   const fetchNotifications = () => {
     setLoading(true);
-    fetch("/api/notifications")
-      .then((r) => r.json())
+    secureFetch<NotificationsResponse>("/api/notifications")
       .then((data) => {
         setNotifications(data.notifications ?? []);
         setUnread(data.unreadCount ?? 0);
@@ -70,7 +75,7 @@ export default function NotificationBell() {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    queueMicrotask(fetchNotifications);
     // Refresh every 60 seconds
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
@@ -79,6 +84,11 @@ export default function NotificationBell() {
   const markAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnread(0);
+    secureFetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ markAllRead: true }),
+    }).catch(fetchNotifications);
   };
 
   const markRead = (id: string) => {
@@ -86,7 +96,7 @@ export default function NotificationBell() {
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
     setUnread((prev) => Math.max(0, prev - 1));
-    fetch("/api/notifications", {
+    secureFetch("/api/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, read: true }),

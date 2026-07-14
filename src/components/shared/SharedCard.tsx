@@ -68,16 +68,7 @@ const SharedCard: React.FC<SharedCardProps> = ({
                 justifyContent: "center",
               }}
             >
-              {Icon && (typeof Icon === "function" || (typeof Icon === "object" && 'render' in Icon)) ? (
-                // @ts-ignore - Handle SVGR functional component
-                <Icon width={40} height={40} />
-              ) : Icon ? (
-                // Handle Next.js static image import object or string
-                <img src={typeof Icon === 'string' ? Icon : (Icon as any).src} alt={title} width={40} height={40} style={{ objectFit: 'contain' }} />
-              ) : (
-                // Fallback if no icon provided
-                <Box sx={{ width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 1 }} />
-              )}
+              <Icon width={40} height={40} />
             </Box>
 
             <Box sx={{ marginLeft: 2.5, flex: 1 }}>

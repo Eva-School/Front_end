@@ -12,6 +12,7 @@ import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import RemoveIcon       from "@mui/icons-material/Remove";
 import SearchIcon       from "@mui/icons-material/Search";
 import SchoolIcon       from "@mui/icons-material/School";
+import { API_BASE_URL, secureFetch } from "@/config/api.config";
 
 interface StudentRanking {
   rank: number;
@@ -255,9 +256,7 @@ export default function RankingsPage() {
   const [search,   setSearch]   = useState("");
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/rankings?year=${encodeURIComponent(year)}&limit=20`)
-      .then((r) => r.json())
+    secureFetch<{ rankings?: StudentRanking[] }>(`${API_BASE_URL}/rankings?year=${encodeURIComponent(year)}&limit=20`)
       .then((d) => setRankings(d.rankings ?? []))
       .catch(() => setRankings([]))
       .finally(() => setLoading(false));
@@ -297,7 +296,14 @@ export default function RankingsPage() {
 
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Year</InputLabel>
-          <Select value={year} label="Year" onChange={(e) => setYear(e.target.value)}>
+          <Select
+            value={year}
+            label="Year"
+            onChange={(e) => {
+              setLoading(true);
+              setYear(e.target.value);
+            }}
+          >
             <MenuItem value="2024-2025">2024 – 2025</MenuItem>
             <MenuItem value="2025-2026">2025 – 2026</MenuItem>
           </Select>

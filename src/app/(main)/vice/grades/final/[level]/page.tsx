@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import LockIcon from '@mui/icons-material/Lock';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { API_BASE_URL, secureFetch } from '@/config/api.config';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -35,7 +36,11 @@ interface GradesResponse {
     subjectName?: string;
     maxScore?: number;
     status: 'draft' | 'submitted' | 'approved';
-    classes?: string[];
+}
+
+interface ClassOption {
+    id: string;
+    name: string;
 }
 
 // ─── Meta ────────────────────────────────────────────────────────────────────
@@ -70,7 +75,7 @@ function FinalGradesDashboardContent() {
 
     const [department, setDepartment] = useState('om');
     const [classFilter, setClassFilter] = useState('all');
-    const [availableClasses, setAvailableClasses] = useState<string[]>([]);
+    const [availableClasses, setAvailableClasses] = useState<ClassOption[]>([]);
     const [status, setStatus] = useState<'draft' | 'submitted' | 'approved'>('draft');
     const [grades, setGrades] = useState<StudentGrade[]>([]);
     const [localGrades, setLocalGrades] = useState<Record<string, number | null>>({});
@@ -82,76 +87,71 @@ function FinalGradesDashboardContent() {
         open: false, msg: '', severity: 'success',
     });
 
-    const API = process.env.NEXT_PUBLIC_API_URL || 'https://evaschool.runasp.net/api';
-    const getToken = () => (typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : null);
+    const API = API_BASE_URL;
 
-    const loadGrades = useCallback(() => {
+    const loadGrades = useCallback(async () => {
         setLoading(true);
-        const token = getToken();
-        fetch(`${API}/vice/grades/final/students?level=${level}&semester=${semester}&department=${department}&classId=${classFilter}`, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            credentials: 'include',
-        })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((data: GradesResponse | null) => {
-                const list = data?.students ?? [];
-                setGrades(list);
-                setStatus(data?.status ?? 'draft');
-                setAvailableClasses(data?.classes ?? []);
-                const initial: Record<string, number | null> = {};
-                list.forEach((s) => { initial[s.studentId] = s.score; });
-                setLocalGrades(initial);
-            })
-            .catch(() => {
-                // Mock data while backend is being integrated
-                const mock: StudentGrade[] = [
-                    { studentId: 's1', studentName: 'Ahmed Ali Mohammed', studentCode: 'STU001', className: '11A', score: null },
-                    { studentId: 's2', studentName: 'Sara Hassan Ibrahim', studentCode: 'STU002', className: '11A', score: null },
-                    { studentId: 's3', studentName: 'Khalid Omar Nasser', studentCode: 'STU003', className: '11B', score: 78 },
-                    { studentId: 's4', studentName: 'Nora Saad Al-Rashidi', studentCode: 'STU004', className: '11B', score: null },
-                    { studentId: 's5', studentName: 'Faisal Abdulaziz Al-Ghamdi', studentCode: 'STU005', className: '11C', score: 85 },
-                ];
-                setGrades(mock);
-                setStatus('draft');
-                setAvailableClasses(['11A', '11B', '11C']);
-                const initial: Record<string, number | null> = {};
-                mock.forEach((s) => { initial[s.studentId] = s.score; });
-                setLocalGrades(initial);
-            })
-            .finally(() => setLoading(false));
+        try {
+            const classData = await secureFetch<Array<{ classId?: string | number; id?: string | number; className?: string; name?: string }>>(
+                `${API}/Classes?yearId=${encodeURIComponent(level)}`
+            ).catch(() => []);
+            setAvailableClasses(classData.flatMap((item) => {
+                const id = item.classId ?? item.id;
+                const name = item.className ?? item.name;
+                return id === undefined || !name ? [] : [{ id: String(id), name }];
+            }));
+
+            const query = new URLSearchParams({ level, semester, department });
+            if (classFilter !== 'all') query.set('classId', classFilter);
+            const data = await secureFetch<GradesResponse>(
+                `${API}/vice/grades/final/students?${query.toString()}`
+            ) as GradesResponse | null;
+            const list = data?.students ?? [];
+            setGrades(list);
+            setStatus(data?.status ?? 'draft');
+            const initial: Record<string, number | null> = {};
+            list.forEach((student) => { initial[student.studentId] = student.score; });
+            setLocalGrades(initial);
+        } catch (error) {
+            setGrades([]);
+            setStatus('draft');
+            setAvailableClasses([]);
+            setLocalGrades({});
+            setSnack({
+                open: true,
+                msg: error instanceof Error ? error.message : 'Unable to load final grades.',
+                severity: 'error',
+            });
+        } finally {
+            setLoading(false);
+        }
     }, [level, semester, department, classFilter, API]);
 
     useEffect(() => { loadGrades(); }, [loadGrades]);
 
     const handleSave = async () => {
         setSaving(true);
-        const token = getToken();
+        if (classFilter === 'all' || !Number.isInteger(Number(classFilter))) {
+            setSnack({ open: true, msg: 'Select one class before saving grades.', severity: 'error' });
+            setSaving(false);
+            return;
+        }
         const payload = {
             level,
             semester: Number(semester),
             department,
+            classId: Number(classFilter),
             grades: Object.entries(localGrades)
                 .filter(([, score]) => score !== null)
                 .map(([studentId, score]) => ({ studentId, score })),
         };
         try {
-            const r = await fetch(`${API}/vice/grades/final/students`, {
+            await secureFetch(`${API}/vice/grades/final/students`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
-            if (r.ok) {
-                setSnack({ open: true, msg: 'Grades saved successfully!', severity: 'success' });
-            } else {
-                setSnack({ open: true, msg: 'Failed to save grades. Please try again.', severity: 'error' });
-            }
+            setSnack({ open: true, msg: 'Grades saved successfully!', severity: 'success' });
         } catch {
             setSnack({ open: true, msg: 'Network error. Please try again.', severity: 'error' });
         } finally {
@@ -161,23 +161,14 @@ function FinalGradesDashboardContent() {
 
     const handleSubmit = async () => {
         setSubmitting(true);
-        const token = getToken();
         try {
-            const r = await fetch(`${API}/vice/grades/final/submit`, {
+            await secureFetch(`${API}/vice/grades/final/submit`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                credentials: 'include',
-                body: JSON.stringify({ level, semester: Number(semester), department }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ level, semester: Number(semester), department, classId: classFilter === 'all' ? null : Number(classFilter) }),
             });
-            if (r.ok) {
-                setSnack({ open: true, msg: 'Grades submitted for approval!', severity: 'success' });
-                setStatus('submitted');
-            } else {
-                setSnack({ open: true, msg: 'Failed to submit. Please try again.', severity: 'error' });
-            }
+            setSnack({ open: true, msg: 'Grades submitted for approval!', severity: 'success' });
+            setStatus('submitted');
         } catch {
             setSnack({ open: true, msg: 'Network error.', severity: 'error' });
         } finally {
@@ -187,23 +178,14 @@ function FinalGradesDashboardContent() {
 
     const handleApprove = async () => {
         setApproving(true);
-        const token = getToken();
         try {
-            const r = await fetch(`${API}/admin/grades/final/approve`, {
+            await secureFetch(`${API}/admin/grades/final/approve`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                credentials: 'include',
-                body: JSON.stringify({ level, semester: Number(semester), department }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ level, semester: Number(semester), department, classId: classFilter === 'all' ? null : classFilter }),
             });
-            if (r.ok) {
-                setSnack({ open: true, msg: 'Grades approved and locked successfully!', severity: 'success' });
-                setStatus('approved');
-            } else {
-                setSnack({ open: true, msg: 'Failed to approve. Please try again.', severity: 'error' });
-            }
+            setSnack({ open: true, msg: 'Grades approved and locked successfully!', severity: 'success' });
+            setStatus('approved');
         } catch {
             setSnack({ open: true, msg: 'Network error.', severity: 'error' });
         } finally {
@@ -443,10 +425,10 @@ function FinalGradesDashboardContent() {
                                             />
                                             {availableClasses.map((cls) => (
                                                 <FormControlLabel
-                                                    key={cls}
-                                                    value={cls}
+                                                    key={cls.id}
+                                                    value={cls.id}
                                                     control={<Radio size="small" sx={{ color: alpha(primaryColor, 0.4), '&.Mui-checked': { color: primaryColor } }} />}
-                                                    label={<Typography variant="body2" fontWeight={700}>{cls}</Typography>}
+                                                    label={<Typography variant="body2" fontWeight={700}>{cls.name}</Typography>}
                                                 />
                                             ))}
                                         </RadioGroup>
