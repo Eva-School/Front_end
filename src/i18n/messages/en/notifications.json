@@ -1,0 +1,7 @@
+{
+  "notifications": {
+    "label": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications yet"
+  }
+}

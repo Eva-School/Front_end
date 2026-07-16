@@ -11,6 +11,7 @@ export interface ViceStudentsListParams {
   department: ViceDepartment;
   classId?: number;
   unassigned?: boolean;
+  academicYearName?: string;
 }
 
 export const ViceStudentsAPI = {
@@ -20,6 +21,7 @@ export const ViceStudentsAPI = {
     qs.set("department", params.department);
     if (params.classId !== undefined) qs.set("classId", String(params.classId));
     if (params.unassigned) qs.set("unassigned", "true");
+    if (params.academicYearName) qs.set("academicYearName", params.academicYearName);
 
     return (await secureFetch(`${API_BASE_URL}/vice/students?${qs.toString()}`)) as ViceStudent[];
   },

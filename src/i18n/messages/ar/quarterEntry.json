@@ -1,0 +1,29 @@
+{
+  "quarterEntry": {
+    "backToSubjects": "العودة إلى المواد",
+    "setup": "إعدادات المادة",
+    "maxSetup": "إعداد الدرجات العظمى للكوارتر",
+    "maxSetupDescription": "حدّد الدرجة العظمى لكل كوارتر. سيستخدم المعلمون هذه الحدود عند إدخال درجات الطلاب في فصولهم.",
+    "saveMaxGrades": "حفظ الدرجات العظمى",
+    "quarter": "الكوارتر",
+    "maxScore": "الدرجة العظمى",
+    "studentRecords": "سجلات الطلاب",
+    "department": "القسم",
+    "class": "الفصل",
+    "allClasses": "كل الفصول",
+    "saveStudentGrades": "حفظ درجات الطلاب",
+    "studentName": "اسم الطالب",
+    "max": "العظمى",
+    "status": "الحالة",
+    "noStudents": "لا يوجد طلاب لهذا الاختيار",
+    "unsaved": "غير محفوظ",
+    "saved": "محفوظ",
+    "empty": "فارغ",
+    "unknownStudent": "غير معروف",
+    "failedLoad": "تعذّر تحميل البيانات من قاعدة البيانات",
+    "maxSaved": "تم تحديث الدرجات العظمى بنجاح!",
+    "networkError": "حدث خطأ في الشبكة. حاول مرة أخرى.",
+    "selectClassWarning": "اختر فصلًا واحدًا قبل حفظ الدرجات.",
+    "studentsSaved": "تم حفظ درجات {count} طالب بنجاح!"
+  }
+}

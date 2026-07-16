@@ -1,0 +1,17 @@
+{
+  "modal": {
+    "addNewStudent": "إضافة طالب جديد",
+    "firstName": "الاسم الأول",
+    "middleNameOptional": "الاسم الأوسط (اختياري)",
+    "lastName": "اسم العائلة",
+    "studentCode": "كود الطالب",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "saveStudent": "حفظ الطالب",
+    "saving": "جاري الحفظ...",
+    "studentAddedSuccess": "تمت إضافة الطالب بنجاح",
+    "year": "السنة",
+    "class": "الفصل",
+    "pleaseSelectClassFirst": "يرجى اختيار فصل أولاً"
+  }
+}

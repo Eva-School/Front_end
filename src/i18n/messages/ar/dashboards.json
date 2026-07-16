@@ -1,0 +1,17 @@
+{
+  "dashboards": {
+  "student": "الطالب",
+  "welcome": "مرحبًا، {name}",
+    "teacher": "المعلم",
+    "vice": "شؤون الطلاب",
+    "admin": "لوحة تحكم الإدارة",
+    "management": "الإدارة",
+    "academicOverview": "نظرة عامة على أدائك الدراسي",
+    "manageSubjectsClasses": "إدارة المواد والفصول المكلّف بها",
+    "noStudentCards": "لا توجد بطاقات لوحة تحكم متاحة لحسابك حتى الآن.",
+    "noAssignedClasses": "لا توجد فصول مكلّف بها حتى الآن.",
+    "noAssignedYears": "لا توجد سنوات دراسية مكلّف بها حسابك حتى الآن.",
+    "failedLoadYears": "تعذّر تحميل السنوات الدراسية المكلّف بها.",
+    "somethingWentWrong": "حدث خطأ ما"
+  }
+}

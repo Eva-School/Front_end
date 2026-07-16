@@ -1,0 +1,27 @@
+{
+  "common": {
+    "home": "Home",
+    "about": "About",
+    "years": "Years",
+    "menu": "Menu",
+    "language": "Language",
+    "logout": "Logout",
+    "profile": "Profile",
+    "theme": "Theme",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "refresh": "Refresh",
+    "notSelected": "Not selected",
+    "progress": "Progress",
+    "rankings": "Rankings",
+    "analytics": "Analytics",
+    "login": "Login",
+    "settings": "Settings"
+  }
+}

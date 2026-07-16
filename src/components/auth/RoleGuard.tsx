@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Box, CircularProgress, Typography, Button } from "@mui/material";
 import { authService, MeResponse } from "@/services/auth.service";
+import { useTranslations } from "next-intl";
 
 interface RoleGuardProps {
     children: React.ReactNode;
@@ -13,6 +14,7 @@ interface RoleGuardProps {
 
 export default function RoleGuard({ children, allowedRoles, fallbackRoute = "/login" }: RoleGuardProps) {
     const router = useRouter();
+    const t = useTranslations();
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
     useEffect(() => {
@@ -54,13 +56,13 @@ export default function RoleGuard({ children, allowedRoles, fallbackRoute = "/lo
         return (
             <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="100vh" gap={2}>
                 <Typography variant="h4" color="error" fontWeight="bold">
-                    Unauthorized Access
+                    {t("auth.unauthorizedAccess")}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                    You do not have permission to view this page.
+                    {t("auth.unauthorizedDescription")}
                 </Typography>
                 <Button variant="contained" onClick={() => router.push(fallbackRoute)}>
-                    Go to Login
+                    {t("auth.goToLogin")}
                 </Button>
             </Box>
         );

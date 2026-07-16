@@ -1,0 +1,29 @@
+{
+  "quarterEntry": {
+    "backToSubjects": "Back to Subjects",
+    "setup": "Setup",
+    "maxSetup": "Maximum Quarter Grades Setup",
+    "maxSetupDescription": "Set the maximum score for each quarter. Teachers will use these maximums when entering individual student scores for their classes.",
+    "saveMaxGrades": "Save Max Grades",
+    "quarter": "Quarter",
+    "maxScore": "Maximum score",
+    "studentRecords": "Student Records",
+    "department": "Department",
+    "class": "Class",
+    "allClasses": "All Classes",
+    "saveStudentGrades": "Save Student Grades",
+    "studentName": "Student Name",
+    "max": "Max",
+    "status": "Status",
+    "noStudents": "No students found for this selection",
+    "unsaved": "Unsaved",
+    "saved": "Saved",
+    "empty": "Empty",
+    "unknownStudent": "Unknown",
+    "failedLoad": "Failed to load data from the database",
+    "maxSaved": "Maximum grades updated successfully!",
+    "networkError": "Network error. Please try again.",
+    "selectClassWarning": "Select one class before saving grades.",
+    "studentsSaved": "Saved grades for {count} student(s) successfully!"
+  }
+}

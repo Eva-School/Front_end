@@ -12,20 +12,18 @@ const SharedCard: React.FC<SharedCardProps> = ({
   href,
 }) => {
   const theme = useTheme();
+  const validHref = typeof href === "string" && href.trim().length > 0 ? href : null;
 
-  return (
-
+  const content = (
       <Card
-      component={Link}
-      href={href}
-        tabIndex={0}
+        tabIndex={validHref ? 0 : -1}
         sx={{
-          textDecoration: "none" ,
+          textDecoration: "none",
           width: "100%",
           maxWidth: 505,
           height: 270,
           borderRadius: 3,
-          cursor: "pointer",
+          cursor: validHref ? "pointer" : "default",
           bgcolor: theme.palette.background.paper,
           display: "flex",
           flexDirection: "column",
@@ -89,6 +87,12 @@ const SharedCard: React.FC<SharedCardProps> = ({
         </Box>
       </Card>
   );
+
+  return validHref ? (
+    <Link href={validHref} style={{ display: "contents", textDecoration: "none" }}>
+      {content}
+    </Link>
+  ) : content;
 };
 
 export default SharedCard;

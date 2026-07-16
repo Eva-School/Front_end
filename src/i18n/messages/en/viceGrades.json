@@ -1,0 +1,25 @@
+{
+  "viceGrades": {
+    "title": "Grades Management",
+    "subtitle": "Monitor and manage all grade entries across academic levels",
+    "totalStudents": "Total Students",
+    "totalSubjects": "Total Subjects",
+    "quarterPending": "Quarter Grades Pending",
+    "finalPending": "Final Grades Pending",
+    "quarterGrades": "Quarter Grades",
+    "quarterSubtitle": "Set subject maximums & manage Q1–Q4 entries",
+    "quarterDescription": "Configure the maximum grade per quarter for each subject. Teachers can then enter student scores within those limits. Once published, grades appear in student dashboards instantly.",
+    "manageQuarter": "Manage Quarter Grades",
+    "finalGrades": "Final Grades",
+    "finalSubtitle": "Enter & submit semester final exam results",
+    "finalDescription": "Enter final exam grades using anonymous student codes for full transparency and integrity. Choose Semester 1 or Semester 2 to get started.",
+    "enterFinal": "Enter Final Grades",
+    "pending": "pending",
+    "recentActivity": "Recent Activity",
+    "updated": "Updated",
+    "noRecentActivity": "No recent activity",
+    "selectSemester": "Select Semester",
+    "selectSemesterDescription": "Choose which semester you want to enter final grades for.",
+    "semester": "Semester"
+  }
+}

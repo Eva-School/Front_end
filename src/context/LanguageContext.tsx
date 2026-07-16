@@ -1,15 +1,11 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import en from "../../messages/en.json";
-import ar from "../../messages/ar.json";
+import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { isAppLocale, timeZone, type AppLocale } from "@/i18n/config";
+import { messages } from "@/i18n/messages";
 
-export type AppLanguage = "en" | "ar";
-
-interface Dictionary {
-  [key: string]: unknown;
-}
-const dictionaries: Record<AppLanguage, Dictionary> = { en, ar };
+export type AppLanguage = AppLocale;
 
 interface LanguageContextValue {
   language: AppLanguage;
@@ -24,12 +20,29 @@ const LanguageContext = createContext<LanguageContextValue | undefined>(undefine
 const STORAGE_KEY = "app_language";
 const COOKIE_KEY = "app_language";
 
-function getNestedValue(dict: Dictionary, path: string): string | undefined {
-  const value = path.split(".").reduce<unknown>((acc, key) => {
-    if (!acc || typeof acc !== "object") return undefined;
-    return (acc as Record<string, unknown>)[key];
-  }, dict);
-  return typeof value === "string" ? value : undefined;
+function TranslationContextBridge({
+  language,
+  setLanguage,
+  toggleLanguage,
+  children,
+}: {
+  language: AppLanguage;
+  setLanguage: (language: AppLanguage) => void;
+  toggleLanguage: () => void;
+  children: React.ReactNode;
+}) {
+  const translate = useTranslations();
+  const value = useMemo<LanguageContextValue>(() => ({
+    language,
+    dir: language === "ar" ? "rtl" : "ltr",
+    setLanguage,
+    toggleLanguage,
+    // Compatibility bridge for existing components. New components should use
+    // next-intl's useTranslations(namespace) directly to benefit from typed keys.
+    t: (key, fallback) => translate.has(key as never) ? translate(key as never) : (fallback ?? key),
+  }), [language, setLanguage, toggleLanguage, translate]);
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
 export function LanguageProvider({
@@ -42,7 +55,7 @@ export function LanguageProvider({
   const [language, setLanguageState] = useState<AppLanguage>(() => {
     if (typeof window === "undefined") return initialLanguage;
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === "en" || saved === "ar" ? saved : initialLanguage;
+    return isAppLocale(saved) ? saved : initialLanguage;
   });
 
   const setLanguage = useCallback((lang: AppLanguage) => {
@@ -73,18 +86,13 @@ export function LanguageProvider({
     );
   }, [language]);
 
-  const value = useMemo<LanguageContextValue>(() => {
-    const dict = dictionaries[language];
-    return {
-      language,
-      dir: language === "ar" ? "rtl" : "ltr",
-      setLanguage,
-      toggleLanguage,
-      t: (key: string, fallback?: string) => getNestedValue(dict, key) ?? fallback ?? key,
-    };
-  }, [language, setLanguage, toggleLanguage]);
-
-  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+  return (
+    <NextIntlClientProvider locale={language} timeZone={timeZone} messages={messages[language]}>
+      <TranslationContextBridge language={language} setLanguage={setLanguage} toggleLanguage={toggleLanguage}>
+        {children}
+      </TranslationContextBridge>
+    </NextIntlClientProvider>
+  );
 }
 
 export function useLanguage() {

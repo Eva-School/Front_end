@@ -6,6 +6,8 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import TeamMemberCard from "./TeamMemberCard";
 import type { Developer } from "@/types/developer";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslations } from "next-intl";
 
 interface TeamCarouselProps {
   developers: Developer[];
@@ -16,6 +18,8 @@ const GAP = 24;
 
 export default function TeamCarousel({ developers }: TeamCarouselProps) {
   const theme = useTheme();
+  const { dir } = useLanguage();
+  const t = useTranslations();
   const primary = theme.palette.primary.main;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -87,10 +91,10 @@ export default function TeamCarousel({ developers }: TeamCarouselProps) {
           <IconButton
             onClick={() => scroll("left")}
             disabled={!canScrollLeft}
-            aria-label="Previous"
+            aria-label={t("a11y.previous")}
             sx={{
               position: "absolute",
-              left: { xs: 4, sm: -20, md: -28 },
+              insetInlineStart: { xs: 4, sm: -20, md: -28 },
               top: "50%",
               transform: "translateY(-50%)",
               bgcolor: theme.palette.background.paper,
@@ -105,15 +109,15 @@ export default function TeamCarousel({ developers }: TeamCarouselProps) {
               "&.Mui-disabled": { bgcolor: theme.palette.action.disabledBackground },
             }}
           >
-            <ChevronLeftIcon />
+            {dir === "rtl" ? <ChevronRightIcon /> : <ChevronLeftIcon />}
           </IconButton>
           <IconButton
             onClick={() => scroll("right")}
             disabled={!canScrollRight}
-            aria-label="Next"
+            aria-label={t("a11y.next")}
             sx={{
               position: "absolute",
-              right: { xs: 4, sm: -20, md: -28 },
+              insetInlineEnd: { xs: 4, sm: -20, md: -28 },
               top: "50%",
               transform: "translateY(-50%)",
               bgcolor: theme.palette.background.paper,
@@ -128,7 +132,7 @@ export default function TeamCarousel({ developers }: TeamCarouselProps) {
               "&.Mui-disabled": { bgcolor: theme.palette.action.disabledBackground },
             }}
           >
-            <ChevronRightIcon />
+            {dir === "rtl" ? <ChevronLeftIcon /> : <ChevronRightIcon />}
           </IconButton>
         </>
       )}

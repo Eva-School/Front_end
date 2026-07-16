@@ -19,6 +19,7 @@ import CampaignIcon from "@mui/icons-material/Campaign";
 import InfoIcon from "@mui/icons-material/Info";
 import AlarmIcon from "@mui/icons-material/Alarm";
 import { secureFetch } from "@/config/api.config";
+import { useLocale, useTranslations } from "next-intl";
 
 interface Notification {
   id: string;
@@ -44,18 +45,21 @@ const TYPE_CONFIG = {
 
 const PRIORITY_COLORS = { low: "#9E9E9E", medium: "#FF9800", high: "#F44336" };
 
-function formatRelativeTime(iso: string): string {
+function formatRelativeTime(iso: string, locale: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto", style: "short" });
+  if (mins < 1) return formatter.format(0, "second");
+  if (mins < 60) return formatter.format(-mins, "minute");
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return formatter.format(-hours, "hour");
+  return formatter.format(-Math.floor(hours / 24), "day");
 }
 
 export default function NotificationBell() {
   const theme = useTheme();
+  const locale = useLocale();
+  const t = useTranslations();
   const primary = theme.palette.primary.main;
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -109,7 +113,7 @@ export default function NotificationBell() {
         <IconButton
           onClick={() => setOpen((v) => !v)}
           size="small"
-          aria-label="Notifications"
+          aria-label={t("notifications.label")}
           sx={{
             color: open ? primary : theme.palette.text.secondary,
             bgcolor: open ? alpha(primary, 0.1) : "transparent",
@@ -146,7 +150,7 @@ export default function NotificationBell() {
             sx={{
               position: "absolute",
               top: "calc(100% + 8px)",
-              right: 0,
+              insetInlineEnd: 0,
               width: 340,
               maxHeight: 480,
               bgcolor: theme.palette.background.paper,
@@ -175,7 +179,7 @@ export default function NotificationBell() {
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
-                  Notifications
+                  {t("notifications.label")}
                 </Typography>
                 {unread > 0 && (
                   <Chip
@@ -196,7 +200,7 @@ export default function NotificationBell() {
                     "&:hover": { textDecoration: "underline" },
                   }}
                 >
-                  Mark all read
+                  {t("notifications.markAllRead")}
                 </Typography>
               )}
             </Box>
@@ -206,7 +210,7 @@ export default function NotificationBell() {
               {loading && (
                 <Box sx={{ py: 3, textAlign: "center" }}>
                   <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                    Loading...
+                    {t("common.loading")}
                   </Typography>
                 </Box>
               )}
@@ -215,7 +219,7 @@ export default function NotificationBell() {
                 <Box sx={{ py: 5, textAlign: "center" }}>
                   <NotificationsIcon sx={{ fontSize: 40, color: alpha(theme.palette.text.secondary, 0.3), mb: 1 }} />
                   <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                    No notifications yet
+                    {t("notifications.empty")}
                   </Typography>
                 </Box>
               )}
@@ -243,7 +247,7 @@ export default function NotificationBell() {
                         <Box
                           sx={{
                             position: "absolute",
-                            left: 8,
+                            insetInlineStart: 8,
                             top: "50%",
                             transform: "translateY(-50%)",
                             width: 6,
@@ -320,7 +324,7 @@ export default function NotificationBell() {
                           variant="caption"
                           sx={{ color: alpha(theme.palette.text.secondary, 0.6), fontSize: "0.65rem", mt: 0.25, display: "block" }}
                         >
-                          {formatRelativeTime(notif.timestamp)}
+                          {formatRelativeTime(notif.timestamp, locale)}
                         </Typography>
                       </Box>
                     </Box>

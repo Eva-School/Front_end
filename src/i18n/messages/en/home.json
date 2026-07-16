@@ -1,0 +1,51 @@
+{
+  "home": {
+    "title": "School Grading System",
+    "subtitle": "One place for grades, reports, and progress. For students, teachers, and admins.",
+    "heroBullet1": "View quarter, final, and competency grades in one dashboard",
+    "heroBullet2": "Switch between academic years (Junior, Wheeler, Senior) with one click",
+    "heroBullet3": "Secure login and role-based access for everyone",
+    "goalTitle": "Our goal",
+    "goal1": "School Grading System is a central platform for managing and viewing student grades. It brings quarter grades, final exam results, and competency (Jadarat) assessments into one clear, easy-to-use place.",
+    "goal2": "Students can see their performance by subject and by academic year. They can compare their results across years and track progress over time. Teachers and admins use the same system to enter and manage grades, so data stays consistent and up to date.",
+    "goal3": "The goal is transparency: everyone sees the same numbers, reports are accurate, and the school has a single source of truth for academic performance.",
+    "audienceTitle": "Who is it for?",
+    "audienceSubtitle": "The platform serves students, teachers, and administrators with role-based access and tailored views.",
+    "audience": {
+      "studentsTitle": "Students",
+      "studentsDesc": "Access your quarter grades, final grades, and competency results. Switch between academic years to view past and current performance.",
+      "teachersTitle": "Teachers",
+      "teachersDesc": "Manage and submit grades for your classes. Enter quarter and final results, update competency assessments, and keep records consistent.",
+      "adminsTitle": "Admins",
+      "adminsDesc": "Oversee users, roles, and data to ensure accuracy and reliable academic reporting."
+    },
+    "featuresTitle": "What you can do",
+    "featuresSubtitle": "Key features available on the platform.",
+    "features": {
+      "quarterTitle": "Quarter grades",
+      "quarterDetail": "Track performance per subject during the quarter.",
+      "finalTitle": "Final grades",
+      "finalDetail": "Semester final exam results in one table.",
+      "jadaratTitle": "Competencies (Jadarat)",
+      "jadaratDetail": "Specialization and competency assessments with attempt history.",
+      "yearsTitle": "Academic years",
+      "yearsDetail": "Switch between Junior, Wheeler, and Senior.",
+      "averagesTitle": "Calculated averages",
+      "averagesDetail": "Average grade and pass rates calculated for clarity and consistency."
+    },
+    "achievementsTitle": "School achievements",
+    "achievementsSubtitle": "Numbers that reflect our reach and impact.",
+    "achievements": {
+      "studentsLabel": "Students on the platform",
+      "studentsDetail": "Active students viewing and tracking grades every term.",
+      "trackedLabel": "Grades tracked digitally",
+      "trackedDetail": "All quarter, final, and competency grades visible in one system.",
+      "satisfactionLabel": "Satisfaction rate",
+      "satisfactionDetail": "Students and staff report high satisfaction with clarity and ease of use.",
+      "accuracyLabel": "Accuracy in reporting",
+      "accuracyDetail": "Single source of truth reduces errors and keeps reports reliable."
+    },
+    "ctaTitle": "Ready to get started?",
+    "ctaSubtitle": "Sign in to access your grades, switch academic years, and view all results."
+  }
+}

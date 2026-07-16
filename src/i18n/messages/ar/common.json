@@ -1,0 +1,27 @@
+{
+  "common": {
+    "home": "الرئيسية",
+    "about": "من نحن",
+    "years": "السنوات",
+    "menu": "القائمة",
+    "language": "اللغة",
+    "logout": "تسجيل الخروج",
+    "profile": "الملف الشخصي",
+    "theme": "المظهر",
+    "lightMode": "الوضع الفاتح",
+    "darkMode": "الوضع الداكن",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة",
+    "loading": "جاري التحميل...",
+    "saving": "جاري الحفظ...",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "refresh": "تحديث",
+    "notSelected": "غير محدد",
+    "progress": "التقدم",
+    "rankings": "التصنيفات",
+    "analytics": "التحليلات",
+    "login": "تسجيل الدخول",
+    "settings": "الإعدادات"
+  }
+}

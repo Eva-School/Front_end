@@ -3,33 +3,29 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Dialog, DialogContent, Box, Typography, TextField, Button, Alert } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import type { ViceStudent } from '@/types/vice/students';
+import type { CreateViceStudentPayload, ViceStudent } from '@/types/vice/students';
 import { useLanguage } from '@/context/LanguageContext';
 import AccessibleIconButton from '@/components/a11y/AccessibleIconButton';
+import { useTranslations } from 'next-intl';
 
 interface EditStudentModalProps {
     open: boolean;
     onClose: () => void;
     student: ViceStudent | null;
-    onSubmit: (payload: {
-        firstName?: string;
-        lastName?: string;
-        studentCode?: string;
-    }) => Promise<void>;
+    onSubmit: (payload: CreateViceStudentPayload) => Promise<void>;
 }
 
-type EditableViceStudent = ViceStudent & {
-    firstName?: string;
-    lastName?: string;
-};
-
 export default function EditStudentModal({ open, onClose, student, onSubmit }: EditStudentModalProps) {
-    const { t } = useLanguage();
+    const { dir } = useLanguage();
+    const t = useTranslations();
 
     const [form, setForm] = useState({
         firstName: '',
+        middleName: '',
         lastName: '',
         studentCode: '',
+        email: '',
+        phone: '',
     });
     
     const [submitting, setSubmitting] = useState(false);
@@ -37,34 +33,44 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
 
     useEffect(() => {
         if (student && open) {
-            // Split name into first and last name for editing (since API returns full name or we can just send firstName/lastName)
-            // Wait, the backend returns firstName and lastName inside ViceStudent if it's available, otherwise we split the full name.
             const nameParts = student.name.split(' ');
-            const editableStudent = student as EditableViceStudent;
-            const fName = editableStudent.firstName || nameParts[0] || '';
-            const lName = editableStudent.lastName || nameParts.slice(1).join(' ') || '';
+            const fName = student.firstName || nameParts[0] || '';
+            const lName = student.lastName || nameParts.slice(1).join(' ') || '';
 
             setForm({
                 firstName: fName,
+                middleName: student.middleName || '',
                 lastName: lName,
                 studentCode: student.studentCode || '',
+                email: student.email || '',
+                phone: student.phone || '',
             });
             setError(null);
         }
     }, [student, open]);
 
     const disabledReason = useMemo(() => {
-        if (!form.firstName.trim()) return t('auth.usernameRequired', 'First name is required');
-        if (!form.lastName.trim()) return t('teachers.lastNameRequired', 'Last name is required');
+        if (!form.firstName.trim()) return t('students.firstNameRequired');
+        if (!form.lastName.trim()) return t('students.lastNameRequired');
         
         const code = form.studentCode.trim();
-        if (!code) return t('modal.studentCode', 'Student Code') + " " + t('auth.passwordRequired', 'is required');
-        if (!/^[a-zA-Z0-9]+$/.test(code)) return "Student Code must be alphanumeric only";
+        if (!code) return t('students.studentCodeRequired');
+        if (!/^[a-zA-Z0-9]+$/.test(code)) return t('students.studentCodeAlphanumeric');
+
+        const email = form.email.trim();
+        if (!email) return t('students.emailRequired');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return t('students.validEmail');
+
+        const phone = form.phone.trim();
+        if (!phone) return t('students.phoneRequired');
+        if (!/^\d{8,15}$/.test(phone)) return t('students.phoneDigits');
         
         return null;
     }, [form, t]);
 
     const handleSave = async () => {
+        if (!student) return;
+
         setError(null);
         if (disabledReason) {
             setError(disabledReason);
@@ -74,12 +80,19 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
         try {
             await onSubmit({
                 firstName: form.firstName.trim(),
+                middleName: form.middleName.trim() || undefined,
                 lastName: form.lastName.trim(),
                 studentCode: form.studentCode.trim(),
+                email: form.email.trim().toLowerCase(),
+                phone: form.phone.trim(),
+                department: student.department,
+                year: student.year,
+                classId: student.classId || undefined,
+                academicYearName: student.academicYearName || undefined,
             });
             onClose();
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : t('students.addStudentFailed', 'Failed to update student'));
+            setError(e instanceof Error ? e.message : t('students.failedUpdateStudent'));
         } finally {
             setSubmitting(false);
         }
@@ -91,6 +104,7 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
         <Dialog
             open={open}
             onClose={onClose}
+            dir={dir}
             maxWidth="sm"
             fullWidth
             PaperProps={{
@@ -102,7 +116,7 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
         >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6" fontWeight="bold">
-                    Edit Student
+                    {t('students.editStudent')}
                 </Typography>
                 <AccessibleIconButton label={t('common.closeMenu')} onClick={onClose} size="small">
                     <CloseIcon />
@@ -124,9 +138,36 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
                     />
                     <TextField
                         fullWidth
+                        label={t('modal.middleNameOptional')}
+                        value={form.middleName}
+                        onChange={(e) => setForm({ ...form, middleName: e.target.value })}
+                        variant="outlined"
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f5f5f5' } }}
+                    />
+                    <TextField
+                        fullWidth
                         label={t('modal.lastName')}
                         value={form.lastName}
                         onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                        variant="outlined"
+                        required
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f5f5f5' } }}
+                    />
+                    <TextField
+                        fullWidth
+                        label={t('modal.email')}
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        variant="outlined"
+                        required
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f5f5f5' } }}
+                    />
+                    <TextField
+                        fullWidth
+                        label={t('modal.phone')}
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
                         variant="outlined"
                         required
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f5f5f5' } }}
@@ -144,12 +185,12 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                     <Button onClick={onClose} sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     <Button
                         variant="contained"
                         onClick={handleSave}
-                        disabled={submitting || !!disabledReason}
+                        disabled={submitting}
                         sx={{
                             backgroundColor: '#ffc107',
                             color: '#000',
@@ -159,7 +200,7 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
                             textTransform: 'none',
                         }}
                     >
-                        {submitting ? 'Saving...' : 'Save Changes'}
+                        {submitting ? t('modal.saving') : t('students.saveChanges')}
                     </Button>
                 </Box>
             </DialogContent>

@@ -5,12 +5,13 @@ import AccessibilityScript from "@/providers/AccessibilityScript";
 import type { AppLanguage } from "@/context/LanguageContext";
 import type { ThemeMode } from "@/context/ThemeModeContext";
 import { cairo, notoSans } from "@/styles/theme/font";
+import { defaultLocale, isAppLocale } from "@/i18n/config";
 
 const LANGUAGE_COOKIE = "app_language";
 const THEME_COOKIE = "app_theme_mode";
 
 function resolveLanguage(value: string | undefined): AppLanguage {
-  return value === "ar" ? "ar" : "en";
+  return isAppLocale(value) ? value : defaultLocale;
 }
 
 function resolveTheme(value: string | undefined): ThemeMode {

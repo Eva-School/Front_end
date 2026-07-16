@@ -4,28 +4,42 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Container, Typography, Stack, Card, RadioGroup, FormControlLabel, Radio,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton,
-  Paper, CircularProgress, Alert, useTheme, alpha, Button
+  Paper, CircularProgress, Alert, useTheme, alpha, Button, FormControl, InputLabel,
+  MenuItem, Select
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
 import SchoolIcon from '@mui/icons-material/School';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ViceStudentsAPI } from '@/data/vice-students.api';
-import type { ViceStudent, ViceDepartment, ViceLevel } from '@/types/vice/students';
+import { AcademicYearsAPI, type AcademicYearOption } from '@/data/academic-years.api';
+import type { CreateViceStudentPayload, ViceStudent, ViceDepartment, ViceLevel } from '@/types/vice/students';
 import { appToast } from '@/hooks/useAppToast';
 import EditStudentModal from '@/components/vice/students/EditStudentModal';
+import { useLanguage } from '@/context/LanguageContext';
+import { useTranslations } from 'next-intl';
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
+const levelTranslationKeys = {
+  junior: 'students.levelJunior',
+  wheeler: 'students.levelWheeler',
+  senior: 'students.levelSenior',
+} as const;
+
 export default function AllStudentsPage() {
   const router = useRouter();
   const theme = useTheme();
   const primary = theme.palette.primary.main;
+  const { dir } = useLanguage();
+  const t = useTranslations();
+  const BackIcon = dir === 'rtl' ? ArrowForwardIcon : ArrowBackIcon;
 
   const [students, setStudents] = useState<ViceStudent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,44 +49,69 @@ export default function AllStudentsPage() {
 
   const [departmentFilter, setDepartmentFilter] = useState<ViceDepartment>('OM');
   const [levelFilter, setLevelFilter] = useState<ViceLevel>('junior');
+  const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
+  const [academicYearName, setAcademicYearName] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    void AcademicYearsAPI.list()
+      .then((years) => {
+        if (!active) return;
+        setAcademicYears(years);
+        setAcademicYearName((current) => current || years.find((year) => year.isActive)?.yearName || years[0]?.yearName || '');
+      })
+      .catch((loadError: unknown) => {
+        if (!active) return;
+        setError(loadError instanceof Error ? loadError.message : t('students.failedLoadYears'));
+      });
+
+    return () => { active = false; };
+  }, [t]);
 
   const fetchStudents = useCallback(async () => {
+    if (!academicYearName) {
+      setStudents([]);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       const data = await ViceStudentsAPI.list({
         year: levelFilter,
         department: departmentFilter,
+        academicYearName,
       });
       setStudents(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load students');
+      setError(e instanceof Error ? e.message : t('students.failedLoadStudents'));
       setStudents([]);
     } finally {
       setLoading(false);
     }
-  }, [levelFilter, departmentFilter]);
+  }, [academicYearName, levelFilter, departmentFilter, t]);
 
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to unassign this student from their class?")) return;
+    if (!window.confirm(t('students.unassignConfirm'))) return;
     try {
       await ViceStudentsAPI.assignClass(id, null);
-      appToast.success("Student unassigned from class successfully");
+      appToast.success(t('students.studentUnassigned'));
       fetchStudents();
     } catch (e: unknown) {
-      appToast.error(e instanceof Error ? e.message : "Failed to unassign student");
+      appToast.error(e instanceof Error ? e.message : t('students.failedUnassign'));
     }
   };
 
-  const handleEditSubmit = async (payload: { firstName?: string; lastName?: string; studentCode?: string }) => {
+  const handleEditSubmit = async (payload: CreateViceStudentPayload) => {
     if (!editingStudent) return;
     try {
         await ViceStudentsAPI.update(editingStudent.id, payload);
-        appToast.success("Student updated successfully");
+        appToast.success(t('students.studentUpdated'));
         fetchStudents();
         setEditingStudent(null);
     } catch (e: unknown) {
@@ -90,7 +129,7 @@ export default function AllStudentsPage() {
   };
 
   return (
-    <Box sx={{ position: 'relative', minHeight: '100vh', pb: 8, bgcolor: theme.palette.background.default, overflow: 'hidden' }}>
+    <Box dir={dir} sx={{ position: 'relative', minHeight: '100vh', pb: 8, bgcolor: theme.palette.background.default, overflow: 'hidden' }}>
       {/* Animated BG */}
       <Box
         component={motion.div}
@@ -107,13 +146,13 @@ export default function AllStudentsPage() {
         <Container maxWidth="lg">
           <Box
             component={motion.div}
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: dir === 'rtl' ? 30 : -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}
           >
             <IconButton onClick={() => router.back()} sx={{ bgcolor: alpha(theme.palette.text.primary, 0.05) }}>
-              <ArrowBackIcon />
+              <BackIcon />
             </IconButton>
             <Typography
               variant="h3"
@@ -124,7 +163,7 @@ export default function AllStudentsPage() {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              All Students Dashboard
+              {t('students.allDashboard')}
             </Typography>
           </Box>
 
@@ -144,7 +183,7 @@ export default function AllStudentsPage() {
                       <SchoolIcon />
                     </Box>
                     <Typography variant="h5" fontWeight={800}>
-                      Students Directory
+                      {t('students.studentsDirectory')}
                     </Typography>
                   </Box>
                   
@@ -159,30 +198,45 @@ export default function AllStudentsPage() {
                       px: 3,
                     }}
                   >
-                    Promote Students
+                    {t('students.promoteStudents')}
                   </Button>
                 </Box>
 
                 {/* Filters */}
                 <Box sx={{
-                  display: 'flex', flexWrap: 'wrap', gap: 6,
+                  display: 'flex', flexWrap: 'wrap', gap: 4,
                   bgcolor: alpha(theme.palette.background.default, 0.5),
                   p: 2.5, borderRadius: 3, border: `1px solid ${alpha(theme.palette.divider, 0.1)}`
                 }}>
+                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel id="all-students-academic-year-label">{t('students.academicYear')}</InputLabel>
+                    <Select
+                      labelId="all-students-academic-year-label"
+                      value={academicYearName}
+                      label={t('students.academicYear')}
+                      onChange={(event) => setAcademicYearName(event.target.value)}
+                    >
+                      {academicYears.map((year) => (
+                        <MenuItem key={year.yearName} value={year.yearName}>
+                          {year.yearName}{year.isActive ? ` (${t('students.currentYear')})` : ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                   <Box>
-                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>DEPARTMENT</Typography>
+                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>{t('students.department')}</Typography>
                     <RadioGroup row value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value as ViceDepartment)}>
                       <FormControlLabel value="OM" control={<Radio sx={{ color: primary, '&.Mui-checked': { color: primary } }} size="small" />} label={<Typography fontWeight={600} fontSize="0.95rem">OM</Typography>} />
                       <FormControlLabel value="SD" control={<Radio sx={{ color: primary, '&.Mui-checked': { color: primary } }} size="small" />} label={<Typography fontWeight={600} fontSize="0.95rem">SD</Typography>} />
                     </RadioGroup>
                   </Box>
                   <Box>
-                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>LEVEL</Typography>
+                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>{t('students.level')}</Typography>
                     <RadioGroup row value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as ViceLevel)}>
                       {(['junior', 'wheeler', 'senior'] as ViceLevel[]).map((lv) => (
                         <FormControlLabel key={lv} value={lv}
                           control={<Radio sx={{ color: primary, '&.Mui-checked': { color: primary } }} size="small" />}
-                          label={<Typography fontWeight={600} fontSize="0.95rem" sx={{ textTransform: 'capitalize' }}>{lv}</Typography>}
+                          label={<Typography fontWeight={600} fontSize="0.95rem">{t(levelTranslationKeys[lv])}</Typography>}
                         />
                       ))}
                     </RadioGroup>
@@ -200,26 +254,27 @@ export default function AllStudentsPage() {
                   <Table>
                     <TableHead>
                       <TableRow sx={{ bgcolor: alpha(primary, 0.1) }}>
-                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>Name</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>Student Code</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>Dept</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>Class</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }} align="right">Actions</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.studentName')}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.studentCode')}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.department')}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.academicYear')}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.class')}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }} align={dir === 'rtl' ? 'left' : 'right'}>{t('students.actions')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       <AnimatePresence mode="popLayout">
                         {loading ? (
                           <TableRow>
-                            <TableCell colSpan={5} align="center" sx={{ py: 6, borderBottom: 'none' }}>
+                            <TableCell colSpan={6} align="center" sx={{ py: 6, borderBottom: 'none' }}>
                               <CircularProgress color="primary" />
                             </TableCell>
                           </TableRow>
                         ) : students.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={5} align="center" sx={{ py: 6, borderBottom: 'none' }}>
+                            <TableCell colSpan={6} align="center" sx={{ py: 6, borderBottom: 'none' }}>
                               <Typography variant="body1" color="text.secondary" fontWeight={500}>
-                                No students found for this department and level.
+                                {t('students.noStudentsForFilter')}
                               </Typography>
                             </TableCell>
                           </TableRow>
@@ -246,6 +301,9 @@ export default function AllStudentsPage() {
                               <TableCell sx={{ fontWeight: 700, color: primary, borderBottomColor: alpha(theme.palette.divider, 0.1) }}>
                                 {student.department}
                               </TableCell>
+                              <TableCell sx={{ fontWeight: 600, borderBottomColor: alpha(theme.palette.divider, 0.1) }}>
+                                {student.academicYearName || academicYearName}
+                              </TableCell>
                               <TableCell sx={{ borderBottomColor: alpha(theme.palette.divider, 0.1) }}>
                                 {student.className ? (
                                   <Box sx={{
@@ -257,16 +315,16 @@ export default function AllStudentsPage() {
                                     {student.className}
                                   </Box>
                                 ) : (
-                                  <Typography variant="caption" color="text.secondary" fontWeight={600}>Unassigned</Typography>
+                                  <Typography variant="caption" color="text.secondary" fontWeight={600}>{t('students.unassigned')}</Typography>
                                 )}
                               </TableCell>
-                              <TableCell align="right" sx={{ borderBottomColor: alpha(theme.palette.divider, 0.1) }}>
-                                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <TableCell align={dir === 'rtl' ? 'left' : 'right'} sx={{ borderBottomColor: alpha(theme.palette.divider, 0.1) }}>
+                                <Stack direction="row" spacing={1} justifyContent={dir === 'rtl' ? 'flex-start' : 'flex-end'}>
                                   <IconButton
                                     size="small"
                                     onClick={() => setEditingStudent(student)}
                                     sx={{ color: theme.palette.info.main, bgcolor: alpha(theme.palette.info.main, 0.1) }}
-                                    title="Edit Student"
+                                    title={t('students.editStudent')}
                                   >
                                     <EditIcon fontSize="small" />
                                   </IconButton>
@@ -275,9 +333,9 @@ export default function AllStudentsPage() {
                                         size="small"
                                         onClick={() => handleDelete(student.id)}
                                         sx={{ color: theme.palette.error.main, bgcolor: alpha(theme.palette.error.main, 0.1) }}
-                                        title="Unassign from Class"
+                                        title={t('students.unassignStudent')}
                                       >
-                                        <DeleteIcon fontSize="small" />
+                                        <LinkOffIcon fontSize="small" />
                                       </IconButton>
                                   )}
                                 </Stack>

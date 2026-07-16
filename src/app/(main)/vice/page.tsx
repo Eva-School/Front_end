@@ -14,7 +14,7 @@ import SharedCard from "@/components/shared/SharedCard";
 import { viceCardsApi } from "@/data/vice/vicecards";
 import { useLanguage } from "@/context/LanguageContext";
 export default function ViceDashboard() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const cards = mapViceCardsToSharedCards(viceCardsApi).map((card) => ({
     ...card,
     title: t(`viceDashboard.${card.id}.title`, card.title),
@@ -59,13 +59,11 @@ export default function ViceDashboard() {
             startIcon={<SettingsIcon />}
             sx={{
               position: "absolute",
-              // MUI's RTL processor mirrors physical left/right properties.
-              // Use the opposite property in Arabic so this stays at the
-              // physical top-left corner in both languages.
+              // Keep this action opposite the dashboard title. MUI mirrors
+              // `right` in RTL, placing it on the physical left in Arabic
+              // and the physical right in English.
               top: { xs: 76, md: 80 },
-              ...(language === "ar"
-                ? { right: { xs: 16, md: 100 } }
-                : { left: { xs: 16, md: 100 } }),
+              right: { xs: 16, md: 100 },
               zIndex: 2,
               borderRadius: "12px",
               px: { xs: 1.5, md: 2.25 },

@@ -1,0 +1,10 @@
+{
+  "gradeSelection": {
+    "backToDashboard": "Back to Dashboard",
+    "quarterSubtitle": "Select an academic level to manage quarter grade entries",
+    "finalSubtitle": "Select an academic level to enter final exam grades",
+    "juniorDescription": "First academic year — foundational studies",
+    "wheelerDescription": "Second academic year — intermediate coursework",
+    "seniorDescription": "Third academic year — advanced curriculum"
+  }
+}

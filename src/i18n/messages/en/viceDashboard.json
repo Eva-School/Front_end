@@ -1,0 +1,20 @@
+{
+  "viceDashboard": {
+    "1": {
+      "title": "Teacher",
+      "description": "Add teachers and assign them to subjects."
+    },
+    "2": {
+      "title": "Student",
+      "description": "Manage classes and student enrollment."
+    },
+    "3": {
+      "title": "Grades",
+      "description": "Manage quarter and final grades setup."
+    },
+    "4": {
+      "title": "Academic Year Settings",
+      "description": "Create academic years and choose what to carry forward."
+    }
+  }
+}

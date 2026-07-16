@@ -1,0 +1,17 @@
+{
+  "dashboards": {
+  "student": "Student",
+  "welcome": "Welcome, {name}",
+    "teacher": "Teacher",
+    "vice": "Student Affairs",
+    "admin": "Admin Dashboard",
+    "management": "Management",
+    "academicOverview": "Your academic overview",
+    "manageSubjectsClasses": "Manage your subjects and classes",
+    "noStudentCards": "No dashboard cards are available for your account yet.",
+    "noAssignedClasses": "No classes assigned yet.",
+    "noAssignedYears": "No academic years are assigned to your account yet.",
+    "failedLoadYears": "Failed to load assigned academic years.",
+    "somethingWentWrong": "Something went wrong"
+  }
+}

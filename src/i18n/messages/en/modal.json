@@ -1,0 +1,17 @@
+{
+  "modal": {
+    "addNewStudent": "Add New Student",
+    "firstName": "First name",
+    "middleNameOptional": "Middle name (optional)",
+    "lastName": "Last name",
+    "studentCode": "Student code",
+    "email": "Email",
+    "phone": "Phone",
+    "saveStudent": "Save Student",
+    "saving": "Saving...",
+    "studentAddedSuccess": "Student added successfully",
+    "year": "Year",
+    "class": "Class",
+    "pleaseSelectClassFirst": "Please select a class first"
+  }
+}

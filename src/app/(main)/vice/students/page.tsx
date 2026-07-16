@@ -637,6 +637,7 @@ export default function ViceStudentsPage() {
               ...payload,
               department,
               year: level,
+              academicYearName: academicYear,
             });
             await loadPoolStudents();
             appToast.success(t('modal.studentAddedSuccess'));

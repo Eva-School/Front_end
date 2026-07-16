@@ -4,8 +4,8 @@ import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, Box, Typography, TextField, Button, Step, StepLabel, Stepper, Alert } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import type { ViceDepartment, ViceLevel } from '@/types/vice/students';
-import { useLanguage } from '@/context/LanguageContext';
 import AccessibleIconButton from '@/components/a11y/AccessibleIconButton';
+import { useTranslations } from 'next-intl';
 
 interface AddStudentModalProps {
     open: boolean;
@@ -23,7 +23,7 @@ interface AddStudentModalProps {
 }
 
 export default function AddStudentModal({ open, onClose, year, department, onSubmit }: AddStudentModalProps) {
-    const { t } = useLanguage();
+    const t = useTranslations();
     const [activeStep] = useState(0);
     const steps = [1, 2, 3];
 
@@ -40,20 +40,20 @@ export default function AddStudentModal({ open, onClose, year, department, onSub
     const [success, setSuccess] = useState(false);
 
     const disabledReason = useMemo(() => {
-        if (!form.firstName.trim()) return t('auth.usernameRequired', 'First name is required');
-        if (!form.lastName.trim()) return t('teachers.lastNameRequired', 'Last name is required');
+        if (!form.firstName.trim()) return t('students.firstNameRequired');
+        if (!form.lastName.trim()) return t('students.lastNameRequired');
         
         const code = form.studentCode.trim();
-        if (!code) return t('modal.studentCode') + " " + t('auth.passwordRequired', 'is required');
-        if (!/^[a-zA-Z0-9]+$/.test(code)) return "Student Code must be alphanumeric only";
+        if (!code) return t('students.studentCodeRequired');
+        if (!/^[a-zA-Z0-9]+$/.test(code)) return t('students.studentCodeAlphanumeric');
         
         const email = form.email.trim();
-        if (!email) return t('modal.email') + " " + t('auth.passwordRequired', 'is required');
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Please enter a valid email address";
+        if (!email) return t('students.emailRequired');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return t('students.validEmail');
         
         const phone = form.phone.trim();
-        if (!phone) return t('modal.phone') + " " + t('auth.passwordRequired', 'is required');
-        if (!/^\d{8,15}$/.test(phone)) return "Phone must contain 8 to 15 digits";
+        if (!phone) return t('students.phoneRequired');
+        if (!/^\d{8,15}$/.test(phone)) return t('students.phoneDigits');
         
         return null;
     }, [form, t]);
@@ -89,7 +89,7 @@ export default function AddStudentModal({ open, onClose, year, department, onSub
                 setSuccess(false);
             }, 800);
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : t('students.addStudentFailed', 'Failed to add student'));
+            setError(e instanceof Error ? e.message : t('students.addStudentFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -158,7 +158,7 @@ export default function AddStudentModal({ open, onClose, year, department, onSub
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
                 <Alert severity="info" sx={{ mb: 2 }}>
-                    {t('modal.year')}: <b>{year}</b> — {t('students.department')}: <b>{department}</b> — {t('modal.class')}: <b>{t('students.unassigned', 'Unassigned')}</b>
+                    {t('modal.year')}: <b>{year}</b> — {t('students.department')}: <b>{department}</b> — {t('modal.class')}: <b>{t('students.unassigned')}</b>
                 </Alert>
 
                 <Box
@@ -246,7 +246,10 @@ export default function AddStudentModal({ open, onClose, year, department, onSub
                     <Button
                         variant="contained"
                         onClick={handleSave}
-                        disabled={submitting || !!disabledReason}
+                        // Keep the action available so handleSave can explain exactly which
+                        // field is missing or invalid instead of leaving the user with a
+                        // disabled button and no reason.
+                        disabled={submitting}
                         sx={{
                             backgroundColor: '#ffc107',
                             color: '#000',

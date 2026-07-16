@@ -38,8 +38,10 @@ export default function StudentDashboard() {
 
         if (cancelled) return;
 
-        const cardsData =
-          cardsRes.status === "fulfilled" ? cardsRes.value : [];
+        if (cardsRes.status === "rejected") {
+          setError(cardsRes.reason instanceof Error ? cardsRes.reason.message : t("dashboards.somethingWentWrong"));
+        }
+        const cardsData = cardsRes.status === "fulfilled" ? cardsRes.value : [];
         setCards(mapStudentCardsToSharedCards(cardsData));
 
         if (profileRes.status === "fulfilled" && profileRes.value) {

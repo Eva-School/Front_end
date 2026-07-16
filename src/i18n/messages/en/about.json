@@ -1,0 +1,40 @@
+{
+  "about": {
+    "title": "About the team",
+    "subtitle": "The dedicated team behind the School Grading System — committed to excellence, security, and a seamless experience for students, teachers, and admins.",
+    "teamLead": "Team Lead",
+    "teamLeadRole": "Team Lead & Technical Mentor",
+    "teamLeadBio": "Responsible for overseeing the code infrastructure and guiding team members to ensure the delivery of integrated solutions with the highest technical quality standards.",
+    "coreSquad": "Core Squad",
+    "teams": {
+      "backend": "Backend Team",
+      "frontend": "Frontend Team",
+      "flutter": "Flutter Mobile Team"
+    },
+    "roles": {
+      "backend": "Backend Developer",
+      "frontend": "Frontend Developer",
+      "flutter": "Flutter Developer"
+    },
+    "members": {
+      "backend": [
+        "Backend Developer 1",
+        "Backend Developer 2",
+        "Backend Developer 3",
+        "Backend Developer 4"
+      ],
+      "frontend": [
+        "Frontend Developer 1",
+        "Frontend Developer 2",
+        "Frontend Developer 3",
+        "Frontend Developer 4"
+      ],
+      "flutter": [
+        "Flutter Developer 1",
+        "Flutter Developer 2",
+        "Flutter Developer 3",
+        "Flutter Developer 4"
+      ]
+    }
+  }
+}

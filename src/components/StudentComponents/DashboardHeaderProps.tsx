@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Box, Typography } from "@mui/material";
+import { useTranslations } from "next-intl";
 
 interface DashboardHeaderProps {
   name: string;
@@ -10,6 +11,7 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ name, year, subtitle }) => {
+  const t = useTranslations();
   return (
     <Box sx={{ mb: 5, textAlign: "start" }}>
       <Typography
@@ -21,7 +23,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ name, year, subtitle 
           textShadow: "2px 2px 4px rgba(0,0,0,0.3)",
         }}
       >
-        Welcome, {name}
+        {t("dashboards.welcome", { name })}
       </Typography>
 
       <Typography

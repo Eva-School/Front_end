@@ -5,11 +5,18 @@ export type ViceDepartment = "OM" | "SD";
 
 export interface ViceStudent {
   id: string;
+  classId: number;
   studentCode: string;
   name: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  email: string;
+  phone: string;
   department: ViceDepartment;
   className: string;
   year: ViceLevel;
+  academicYearName: string;
 }
 
 export interface CreateViceStudentPayload {
@@ -22,6 +29,7 @@ export interface CreateViceStudentPayload {
   department: ViceDepartment;
   year: ViceLevel;
   classId?: number;
+  academicYearName?: string;
 }
 
 export interface CreateClassPayload {
