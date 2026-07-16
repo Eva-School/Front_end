@@ -20,7 +20,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       sx={{
         position: "relative",
         overflow: "hidden",
-        textAlign: "left",
+        textAlign: "start",
 
 
 

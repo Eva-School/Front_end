@@ -21,12 +21,12 @@ export interface CreateViceStudentPayload {
   phone: string;
   department: ViceDepartment;
   year: ViceLevel;
-  classId: number;
+  classId?: number;
 }
 
 export interface CreateClassPayload {
   yearId: string;
+  stage: ViceLevel;
   department: ViceDepartment;
   className: string;
 }
-

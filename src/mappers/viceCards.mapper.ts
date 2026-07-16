@@ -1,8 +1,8 @@
 import { ViceCardApi } from '@/types/vice/vice-api';
 import { CardData } from "@/types/SharedCard";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import DescriptionIcon from "@mui/icons-material/Description";
-import GradingIcon from "@mui/icons-material/Grading";
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import GroupsIcon from "@mui/icons-material/Groups";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
 
 export function mapViceCardsToSharedCards(
   data: ViceCardApi[]
@@ -14,9 +14,9 @@ export function mapViceCardsToSharedCards(
     href: item.route,
     icon:
       item.title === "Teacher"
-        ? MenuBookIcon
+        ? PersonAddAlt1Icon
         : item.title === "Grades"
-          ? GradingIcon
-          : DescriptionIcon,
+          ? FactCheckIcon
+          : GroupsIcon,
   }));
 }

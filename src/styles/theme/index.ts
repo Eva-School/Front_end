@@ -1,10 +1,11 @@
 import { createTheme, ThemeOptions } from "@mui/material/styles";
 import type { CSSProperties } from "react";
 import { getPalette } from "./palette";
-import { typography } from "./typography";
+import { getTypography } from "./typography";
+import type { AppLanguage } from "@/context/LanguageContext";
 
-export function createAppTheme(mode: "light" | "dark") {
-    const initialTheme = createTheme({ palette: getPalette(mode), typography });
+export function createAppTheme(mode: "light" | "dark", language: AppLanguage) {
+    const initialTheme = createTheme({ palette: getPalette(mode), typography: getTypography(language), direction: language === "ar" ? "rtl" : "ltr" });
 
     const finalThemeOptions: ThemeOptions = {
         ...initialTheme,

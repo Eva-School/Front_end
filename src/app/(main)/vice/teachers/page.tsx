@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Box,
@@ -33,13 +33,18 @@ import { alpha, useTheme } from "@mui/material/styles";
 
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 
 import { Teacher } from "@/types/teacher.types";
 import { Class, Subject } from "@/types/subject.types";
 import { TeachersAPI } from "@/data/teachers.api";
 import { SubjectsAPI } from "@/data/subjects.api";
 import { ClassesAPI } from "@/data/classes.api";
-import { TeacherAssignmentsAPI } from "@/data/teacher-assignments.api";
+import { TeacherAssignmentsAPI, TeacherAssignmentListItem } from "@/data/teacher-assignments.api";
+import { AcademicYearsAPI, AcademicYearOption } from "@/data/academic-years.api";
 import { useLanguage } from "@/context/LanguageContext";
 import LoadingRegion from "@/components/a11y/LoadingRegion";
 import AccessibleIconButton from "@/components/a11y/AccessibleIconButton";
@@ -57,6 +62,10 @@ export default function ViceTeachersPage() {
 
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [subjects, setSubjects] = useState<Subject[]>([]);
+    const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
+    const [assignments, setAssignments] = useState<TeacherAssignmentListItem[]>([]);
+    const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
+    const [editingAssignment, setEditingAssignment] = useState<TeacherAssignmentListItem | null>(null);
 
     const [selectedTeacherId, setSelectedTeacherId] = useState("");
     const [selectedYear, setSelectedYear] = useState("");
@@ -67,15 +76,6 @@ export default function ViceTeachersPage() {
     const [isSavingTeacher, setIsSavingTeacher] = useState(false);
     const [teacherError, setTeacherError] = useState<string | null>(null);
     const [teacherSuccess, setTeacherSuccess] = useState(false);
-    const [pendingTeacherDraft, setPendingTeacherDraft] = useState<{
-        firstName: string;
-        middleName?: string;
-        lastName: string;
-        email: string;
-        phone: string;
-        qualifications: string;
-        department: string;
-    } | null>(null);
 
     // Loading and error states for data fetching
     const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
@@ -106,6 +106,17 @@ export default function ViceTeachersPage() {
     const [selectedStage, setSelectedStage] = useState<"junior" | "wheeler" | "senior">("junior");
     const [subjectDialogError, setSubjectDialogError] = useState<string | null>(null);
 
+    const loadAssignments = useCallback(async () => {
+        setIsLoadingAssignments(true);
+        try {
+            setAssignments(await TeacherAssignmentsAPI.list());
+        } catch (error) {
+            setFetchError(error instanceof Error ? error.message : t("teachers.failedLoadAssignments", "Failed to load teacher assignments."));
+        } finally {
+            setIsLoadingAssignments(false);
+        }
+    }, [t]);
+
 
     /* ===================== FETCH DATA ===================== */
 
@@ -128,6 +139,13 @@ export default function ViceTeachersPage() {
             });
     }, [t]);
 
+    useEffect(() => {
+        AcademicYearsAPI.list()
+            .then(setAcademicYears)
+            .catch((error) => setFetchError(error instanceof Error ? error.message : t("teachers.failedLoadAcademicYears", "Failed to load academic years.")));
+        void loadAssignments();
+    }, [t, loadAssignments]);
+
 
     const loadTeachers = async () => {
         setIsLoadingTeachers(true);
@@ -147,17 +165,24 @@ export default function ViceTeachersPage() {
     };
 
     useEffect(() => {
-        if (!selectedLevel) {
+        if (!selectedYear || !selectedLevel) {
             setSubjects([]);
+            setSelectedSubjectId("");
             return;
         }
+        // A subject ID is only valid within its own academic-year and level.
+        setSubjects([]);
+        setSelectedSubjectId("");
         setIsLoadingSubjects(true);
-        SubjectsAPI.getByYear(selectedLevel)
+        let requestIsCurrent = true;
+        SubjectsAPI.getByYear(selectedYear, selectedLevel)
             .then((data) => {
+                if (!requestIsCurrent) return;
                 setSubjects(data);
                 setIsLoadingSubjects(false);
             })
             .catch((error) => {
+                if (!requestIsCurrent) return;
                 console.error("Failed to fetch subjects:", error);
                 setFetchError(
                     error instanceof Error
@@ -166,20 +191,29 @@ export default function ViceTeachersPage() {
                 );
                 setIsLoadingSubjects(false);
             });
-    }, [selectedLevel, t]);
+        return () => {
+            requestIsCurrent = false;
+        };
+    }, [selectedYear, selectedLevel, t]);
 
     useEffect(() => {
-        if (!selectedYear) {
+        if (!selectedYear || !selectedLevel) {
             setClasses([]);
+            setSelectedClassIds([]);
             return;
         }
+        setClasses([]);
+        setSelectedClassIds([]);
         setIsLoadingClasses(true);
-        ClassesAPI.getByYear(selectedYear)
+        let requestIsCurrent = true;
+        ClassesAPI.getByYear(selectedYear, selectedLevel as "junior" | "wheeler" | "senior" | undefined)
             .then((data) => {
+                if (!requestIsCurrent) return;
                 setClasses(data);
                 setIsLoadingClasses(false);
             })
             .catch((error) => {
+                if (!requestIsCurrent) return;
                 console.error("Failed to fetch classes:", error);
                 setFetchError(
                     error instanceof Error
@@ -188,7 +222,10 @@ export default function ViceTeachersPage() {
                 );
                 setIsLoadingClasses(false);
             });
-    }, [selectedYear, t]);
+        return () => {
+            requestIsCurrent = false;
+        };
+    }, [selectedYear, selectedLevel, t]);
 
     /* ===================== HANDLERS ===================== */
     const toggleClassSelection = (classId: number) => {
@@ -201,7 +238,7 @@ export default function ViceTeachersPage() {
 
     const handleAssignTeacher = async () => {
         // Validation
-        if ((!selectedTeacherId && !pendingTeacherDraft) || !selectedYear || !selectedSubjectId || selectedClassIds.length === 0) {
+        if (!selectedTeacherId || !selectedYear || !selectedSubjectId || selectedClassIds.length === 0) {
             setAssignmentError(t("teachers.fillRequiredFields", "Please fill in all required fields"));
             return;
         }
@@ -211,28 +248,7 @@ export default function ViceTeachersPage() {
         setIsAssigningTeacher(true);
 
         try {
-            let teacherIdToAssign = selectedTeacherId;
-
-            // If no existing teacher selected, create from draft now (final step).
-            if (!teacherIdToAssign && pendingTeacherDraft) {
-                const createdTeacher = (await TeachersAPI.create({
-                    hireDate: new Date().toISOString(),
-                    department: pendingTeacherDraft.department,
-                    qualifications: pendingTeacherDraft.qualifications,
-                    email: pendingTeacherDraft.email,
-                    role: "Teacher",
-                    phone: pendingTeacherDraft.phone,
-                    fullName: {
-                        firstName: pendingTeacherDraft.firstName,
-                        middleName: pendingTeacherDraft.middleName,
-                        lastName: pendingTeacherDraft.lastName,
-                    },
-                })) as Teacher;
-
-                teacherIdToAssign = createdTeacher.id;
-                setPendingTeacherDraft(null);
-                await loadTeachers();
-            }
+            const teacherIdToAssign = selectedTeacherId;
 
             if (!teacherIdToAssign) {
                 throw new Error(t("teachers.teacherNotSelected", "Teacher is not selected"));
@@ -246,19 +262,26 @@ export default function ViceTeachersPage() {
                 throw new Error(t("teachers.selectValidClass", "Please select at least one valid class"));
             }
 
-            await TeacherAssignmentsAPI.create({
+            const assignmentPayload = {
                 teacherId: String(teacherIdToAssign).trim(),
                 yearId: String(selectedYear).trim(),
                 subjectId: String(selectedSubjectId).trim(),
                 classIds: normalizedClassIds,
-            });
+            };
+            if (editingAssignment) {
+                await TeacherAssignmentsAPI.replace(assignmentPayload);
+            } else {
+                await TeacherAssignmentsAPI.create(assignmentPayload);
+            }
 
             setAssignmentSuccess(true);
-            appToast.success(t("teachers.assignedSuccess", "Teacher assigned successfully!"));
+            appToast.success(editingAssignment ? t("teachers.assignmentUpdated", "Teacher assignment updated successfully!") : t("teachers.assignedSuccess", "Teacher assigned successfully!"));
             // Reset form
             setSelectedTeacherId("");
             setSelectedSubjectId("");
             setSelectedClassIds([]);
+            setEditingAssignment(null);
+            await loadAssignments();
 
             // Hide success message after delay
             setTimeout(() => {
@@ -278,6 +301,39 @@ export default function ViceTeachersPage() {
             );
         } finally {
             setIsAssigningTeacher(false);
+        }
+    };
+
+    const handleEditAssignment = (assignment: TeacherAssignmentListItem) => {
+        setEditingAssignment(assignment);
+        setSelectedTeacherId(String(assignment.teacherId));
+        setSelectedYear(assignment.yearName);
+        setSelectedLevel(assignment.stage);
+        setSelectedSubjectId(String(assignment.subjectId));
+        setSelectedClassIds(assignments
+            .filter((item) => item.teacherId === assignment.teacherId && item.academicYearId === assignment.academicYearId && item.subjectId === assignment.subjectId && item.isActive)
+            .map((item) => item.classId));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const handleSetAssignmentStatus = async (assignment: TeacherAssignmentListItem) => {
+        try {
+            await TeacherAssignmentsAPI.setStatus(assignment, !assignment.isActive);
+            await loadAssignments();
+            appToast.success(assignment.isActive ? t("teachers.assignmentDeactivated", "Assignment deactivated.") : t("teachers.assignmentActivated", "Assignment activated."));
+        } catch (error) {
+            appToast.error(error instanceof Error ? error.message : t("teachers.failedUpdateAssignment", "Failed to update assignment."));
+        }
+    };
+
+    const handleDeleteAssignment = async (assignment: TeacherAssignmentListItem) => {
+        if (!window.confirm(t("teachers.deleteAssignmentConfirm", "Delete this teacher assignment permanently?"))) return;
+        try {
+            await TeacherAssignmentsAPI.remove(assignment);
+            await loadAssignments();
+            appToast.success(t("teachers.assignmentDeleted", "Assignment deleted."));
+        } catch (error) {
+            appToast.error(error instanceof Error ? error.message : t("teachers.failedDeleteAssignment", "Failed to delete assignment."));
         }
     };
 
@@ -305,6 +361,10 @@ export default function ViceTeachersPage() {
         }
         if (!teacherForm.department.trim()) {
             setTeacherError(t("teachers.departmentRequired", "Department is required"));
+            return;
+        }
+        if (!teacherForm.qualifications.trim()) {
+            setTeacherError(t("teachers.qualificationsRequired", "Qualifications are required"));
             return;
         }
 
@@ -337,18 +397,21 @@ export default function ViceTeachersPage() {
                     .substring(0, 255); // Limit length
             };
 
-            // Save as local draft only; creation happens at final assign step.
-            setPendingTeacherDraft({
-                firstName: sanitizeInput(teacherForm.firstName),
-                middleName: teacherForm.middleName
-                    ? sanitizeInput(teacherForm.middleName)
-                    : undefined,
-                lastName: sanitizeInput(teacherForm.lastName),
-                email: teacherForm.email.trim().toLowerCase(),
-                phone: cleanPhone,
-                qualifications: sanitizeInput(teacherForm.qualifications),
+            const createdTeacher = await TeachersAPI.create({
+                hireDate: new Date().toISOString(),
                 department: sanitizeInput(teacherForm.department),
+                qualifications: sanitizeInput(teacherForm.qualifications),
+                email: teacherForm.email.trim().toLowerCase(),
+                role: "Teacher",
+                phone: cleanPhone,
+                fullName: {
+                    firstName: sanitizeInput(teacherForm.firstName),
+                    middleName: teacherForm.middleName ? sanitizeInput(teacherForm.middleName) : undefined,
+                    lastName: sanitizeInput(teacherForm.lastName),
+                },
             });
+            setSelectedTeacherId(createdTeacher.id);
+            await loadTeachers();
 
             // Success - reset form and continue to assignment steps
             setTeacherSuccess(true);
@@ -392,8 +455,8 @@ export default function ViceTeachersPage() {
             setSubjectDialogError(t("teachers.subjectNameRequired", "Subject name is required"));
             return;
         }
-        if (!selectedStage) {
-            setSubjectDialogError(t("teachers.selectAcademicYear", "Please select a stage"));
+        if (!selectedYear || !selectedStage) {
+            setSubjectDialogError(t("teachers.selectAcademicYear", "Please select an academic year and stage"));
             return;
         }
         try {
@@ -403,8 +466,9 @@ export default function ViceTeachersPage() {
                     ? `${subjectName.trim()} (Jadarat)`
                     : subjectName.trim();
 
-            await SubjectsAPI.create({
+            const createdSubject = await SubjectsAPI.create({
                 subjectName: normalizedSubjectName,
+                yearName: selectedYear,
                 stage: selectedStage,
             });
 
@@ -412,9 +476,9 @@ export default function ViceTeachersPage() {
             setSubjectName("");
             setSubjectType("academic");
             setSubjectDialogError(null);
-            // Subject endpoints are filtered by education stage, not academic-year label.
-            if (selectedLevel) {
-                setSubjects(await SubjectsAPI.getByYear(selectedLevel));
+            if (selectedLevel === selectedStage) {
+                setSubjects(await SubjectsAPI.getByYear(selectedYear, selectedLevel));
+                setSelectedSubjectId(String(createdSubject.id));
             }
             appToast.success(t("teachers.saveSubject", "Subject saved!"));
         } catch (error) {
@@ -619,11 +683,6 @@ export default function ViceTeachersPage() {
                                                 {t("teachers.addNewTeacher")}
                                             </Button>
                                         </Box>
-                                        {pendingTeacherDraft && (
-                                            <Alert severity="info" sx={{ borderRadius: 2 }}>
-                                                {t("teachers.draftSaved", "New teacher draft saved. Complete year/subject/classes then click")} <b>{t("teachers.assignTeacherCta", "Assign Teacher")}</b> {t("teachers.toCreateAssign", "to create and assign.")}
-                                            </Alert>
-                                        )}
                                     </Stack>
                                 </Card>
                             </Box>
@@ -645,21 +704,29 @@ export default function ViceTeachersPage() {
                                                 <Select
                                                     label={t("students.academicYear")}
                                                     value={selectedYear}
-                                                    onChange={(e) => setSelectedYear(e.target.value)}
+                                                    onChange={(e) => {
+                                                        setSelectedYear(e.target.value);
+                                                        setSelectedSubjectId("");
+                                                        setSelectedClassIds([]);
+                                                    }}
                                                     sx={{ borderRadius: 2 }}
                                                 >
-                                                    <MenuItem value="2024-2025">2024-2025</MenuItem>
-                                                    <MenuItem value="2025-2026">2025-2026</MenuItem>
-                                                    <MenuItem value="2026-2027">2026-2027</MenuItem>
+                                                    {academicYears.filter((year) => year.isActive).map((year) => (
+                                                        <MenuItem key={year.yearName} value={year.yearName}>{year.yearName}</MenuItem>
+                                                    ))}
                                                 </Select>
                                             </FormControl>
 
                                             <FormControl fullWidth size="small" sx={{ maxWidth: { xs: "100%", sm: 220 }, minWidth: 180 }}>
-                                                <InputLabel>Level</InputLabel>
+                                                <InputLabel>{t("teachers.level", "Level")}</InputLabel>
                                                 <Select
-                                                    label="Level"
+                                                    label={t("teachers.level", "Level")}
                                                     value={selectedLevel}
-                                                    onChange={(e) => setSelectedLevel(e.target.value)}
+                                                    onChange={(e) => {
+                                                        setSelectedLevel(e.target.value);
+                                                        setSelectedSubjectId("");
+                                                        setSelectedClassIds([]);
+                                                    }}
                                                     sx={{ borderRadius: 2 }}
                                                 >
                                                     <MenuItem value="junior">Junior</MenuItem>
@@ -674,7 +741,7 @@ export default function ViceTeachersPage() {
                                                     label={t("teachers.subject")}
                                                     value={selectedSubjectId}
                                                     onChange={(e) => setSelectedSubjectId(e.target.value)}
-                                                    disabled={isLoadingSubjects || !selectedLevel}
+                                                    disabled={isLoadingSubjects || !selectedYear || !selectedLevel}
                                                     sx={{ borderRadius: 2 }}
                                                 >
                                                     {isLoadingSubjects ? (
@@ -695,7 +762,11 @@ export default function ViceTeachersPage() {
 
                                             <AccessibleIconButton
                                                 label={t("teachers.addSubject", "Add subject")}
-                                                onClick={() => setOpenAddSubject(true)}
+                                                onClick={() => {
+                                                    setSelectedStage((selectedLevel || "junior") as "junior" | "wheeler" | "senior");
+                                                    setOpenAddSubject(true);
+                                                }}
+                                                disabled={!selectedYear || !selectedLevel}
                                                 sx={{
                                                     backgroundColor: primary,
                                                     color: theme.palette.primary.contrastText,
@@ -730,7 +801,7 @@ export default function ViceTeachersPage() {
                                                 fontWeight: 700, fontSize: '0.85rem',
                                                 border: `1px solid ${alpha(primary, 0.25)}`,
                                             }}>
-                                                ✓ {selectedClassIds.length} class{selectedClassIds.length > 1 ? 'es' : ''} selected
+                                                ✓ {t("teachers.classesSelected", "{count} class(es) selected").replace("{count}", String(selectedClassIds.length))}
                                             </Box>
                                         )}
 
@@ -788,6 +859,64 @@ export default function ViceTeachersPage() {
                             </Box>
                         </Stack>
 
+                        <Box component={motion.div} variants={itemVariants}>
+                            <Card sx={glassCardSx}>
+                                <Stack spacing={2.5}>
+                                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+                                        <Box>
+                                            <Typography variant="h5" fontWeight={800}>{t("teachers.savedAssignments", "Saved Teacher Assignments")}</Typography>
+                                            <Typography variant="body2" color="text.secondary">{t("teachers.savedAssignmentsDescription", "Assignments below are loaded directly from the academic database.")}</Typography>
+                                        </Box>
+                                        <Button variant="outlined" onClick={() => void loadAssignments()} disabled={isLoadingAssignments} sx={{ textTransform: "none", borderRadius: 2 }}>
+                                            {isLoadingAssignments ? t("common.loading") : t("common.refresh")}
+                                        </Button>
+                                    </Box>
+                                    <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
+                                        <Table size="small">
+                                            <TableHead sx={{ bgcolor: alpha(primary, 0.1) }}>
+                                                <TableRow>
+                                                    <TableCell sx={{ fontWeight: 800 }}>{t("teachers.name")}</TableCell>
+                                                    <TableCell sx={{ fontWeight: 800 }}>{t("students.academicYear")}</TableCell>
+                                                    <TableCell sx={{ fontWeight: 800 }}>{t("teachers.level", "Level")}</TableCell>
+                                                    <TableCell sx={{ fontWeight: 800 }}>{t("teachers.subject")}</TableCell>
+                                                    <TableCell sx={{ fontWeight: 800 }}>{t("students.class")}</TableCell>
+                                                    <TableCell sx={{ fontWeight: 800 }}>{t("teachers.status", "Status")}</TableCell>
+                                                    <TableCell align="center" sx={{ fontWeight: 800 }}>{t("teachers.actions", "Actions")}</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {assignments.map((assignment) => (
+                                                    <TableRow key={`${assignment.teacherId}-${assignment.academicYearId}-${assignment.subjectId}-${assignment.classId}`} hover>
+                                                        <TableCell>{assignment.teacherName}</TableCell>
+                                                        <TableCell>{assignment.yearName}</TableCell>
+                                                        <TableCell>{t(`vice.${assignment.stage}`, assignment.stage)}</TableCell>
+                                                        <TableCell>{assignment.subjectName}</TableCell>
+                                                        <TableCell>{assignment.className}</TableCell>
+                                                        <TableCell>{assignment.isActive ? t("teachers.active", "Active") : t("teachers.inactive", "Inactive")}</TableCell>
+                                                        <TableCell align="center">
+                                                            <Stack direction="row" spacing={0.5} justifyContent="center">
+                                                                <AccessibleIconButton label={t("teachers.editAssignment", "Edit assignment")} onClick={() => handleEditAssignment(assignment)}><EditIcon fontSize="small" /></AccessibleIconButton>
+                                                                <AccessibleIconButton label={assignment.isActive ? t("teachers.deactivateAssignment", "Deactivate assignment") : t("teachers.activateAssignment", "Activate assignment")} onClick={() => void handleSetAssignmentStatus(assignment)}>
+                                                                    {assignment.isActive ? <PauseCircleOutlineIcon fontSize="small" /> : <PlayCircleOutlineIcon fontSize="small" />}
+                                                                </AccessibleIconButton>
+                                                                <AccessibleIconButton label={t("teachers.deleteAssignment", "Delete assignment")} onClick={() => void handleDeleteAssignment(assignment)}><DeleteOutlineIcon fontSize="small" /></AccessibleIconButton>
+                                                            </Stack>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                                {!isLoadingAssignments && assignments.length === 0 && (
+                                                    <TableRow><TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>{t("teachers.noAssignments", "No teacher assignments have been created yet.")}</TableCell></TableRow>
+                                                )}
+                                                {isLoadingAssignments && (
+                                                    <TableRow><TableCell colSpan={7} align="center" sx={{ py: 4 }}><CircularProgress size={24} /></TableCell></TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </Stack>
+                            </Card>
+                        </Box>
+
                         {/* Error and Success Messages */}
                         <AnimatePresence>
                             {fetchError && (
@@ -821,7 +950,9 @@ export default function ViceTeachersPage() {
                                 variant="contained"
                                 size="large"
                                 disabled={
-                                    (!selectedTeacherId && !pendingTeacherDraft) ||
+                                    !selectedTeacherId ||
+                                    !selectedYear ||
+                                    !selectedLevel ||
                                     !selectedSubjectId ||
                                     selectedClassIds.length === 0 ||
                                     isAssigningTeacher
@@ -845,7 +976,7 @@ export default function ViceTeachersPage() {
                                         {t("teachers.processing")}
                                     </>
                                 ) : (
-                                    t("teachers.createAndAssignTeacher")
+                                    editingAssignment ? t("teachers.saveAssignmentChanges", "Save Assignment Changes") : t("teachers.createAndAssignTeacher")
                                 )}
                             </Button>
                         </Box>
@@ -867,6 +998,9 @@ export default function ViceTeachersPage() {
 
                     <DialogContent>
                         <Stack spacing={2.5} sx={{ mt: 1, minWidth: { xs: 0, sm: 400 } }}>
+                            <Typography variant="body2" color="text.secondary">
+                                {t("teachers.requiredFieldsHint", "Fields marked with * are required.")}
+                            </Typography>
                             {/* Success Message */}
                             {teacherSuccess && (
                                 <Alert severity="success" sx={{ borderRadius: 2 }}>
@@ -890,6 +1024,7 @@ export default function ViceTeachersPage() {
                                 fullWidth
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
+
                             <TextField
                                 label={t("modal.middleNameOptional")}
                                 placeholder={t("modal.middleNameOptional")}
@@ -948,6 +1083,7 @@ export default function ViceTeachersPage() {
                                 }
                                 multiline
                                 rows={3}
+                                required
                                 fullWidth
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
@@ -1040,7 +1176,7 @@ export default function ViceTeachersPage() {
                             </FormControl>
 
                             <Alert severity="info" sx={{ borderRadius: 2 }}>
-                                {t("teachers.subjectForYear", "Subject will be created for stage:")} <b>{selectedStage}</b>
+                                {t("teachers.sharedSubjectHint", "This subject will be available in every academic year for the selected level.")} <b>{selectedStage}</b>
                             </Alert>
 
                             <RadioGroup
@@ -1064,7 +1200,7 @@ export default function ViceTeachersPage() {
                             <Button
                                 variant="contained"
                                 onClick={handleSaveSubject}
-                                disabled={!subjectName.trim()}
+                                disabled={!subjectName.trim() || !selectedYear}
                                 sx={{
                                     background: `linear-gradient(45deg, ${primary}, ${secondary})`,
                                     color: theme.palette.primary.contrastText,

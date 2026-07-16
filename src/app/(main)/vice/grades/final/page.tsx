@@ -9,6 +9,7 @@ import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -20,17 +21,17 @@ const itemVariants = {
     visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 90, damping: 15 } },
 };
 
-const LEVELS = [
-    { id: 'junior',   label: 'Junior',   emoji: '🌱', color: '#F59E0B', description: 'First academic year — foundational studies' },
-    { id: 'wheeler',  label: 'Wheeler',  emoji: '⚡', color: '#06B6D4', description: 'Second academic year — intermediate coursework' },
-    { id: 'senior',   label: 'Senior',   emoji: '🎓', color: '#8B5CF6', description: 'Third academic year — advanced curriculum' },
-];
-
 function FinalGradesSetupContent() {
     const theme = useTheme();
+    const { t } = useLanguage();
     const primary = '#10B981';
     const searchParams = useSearchParams();
     const semester = searchParams?.get('semester') || '1';
+    const levels = [
+        { id: 'junior', emoji: '🌱', color: '#F59E0B' },
+        { id: 'wheeler', emoji: '⚡', color: '#06B6D4' },
+        { id: 'senior', emoji: '🎓', color: '#8B5CF6' },
+    ];
 
     return (
         <Box
@@ -88,7 +89,7 @@ function FinalGradesSetupContent() {
                                 }}
                             >
                                 <ArrowBackIcon fontSize="small" />
-                                <Typography variant="body2" fontWeight={600} color="inherit">Back to Dashboard</Typography>
+                                <Typography variant="body2" fontWeight={600} color="inherit">{t('gradeSelection.backToDashboard')}</Typography>
                             </Box>
                         </Link>
 
@@ -115,10 +116,10 @@ function FinalGradesSetupContent() {
                                             lineHeight: 1.1,
                                         }}
                                     >
-                                        Final Grades
+                                        {t('viceGrades.finalGrades')}
                                     </Typography>
                                     <Chip
-                                        label={`Semester ${semester}`}
+                                        label={`${t('viceGrades.semester')} ${semester}`}
                                         sx={{
                                             fontWeight: 800, fontSize: '0.85rem',
                                             bgcolor: alpha(primary, 0.12), color: primary,
@@ -128,7 +129,7 @@ function FinalGradesSetupContent() {
                                     />
                                 </Stack>
                                 <Typography variant="body1" color="text.secondary" fontWeight={500} mt={0.5}>
-                                    Select an academic level to enter final exam grades
+                                    {t('gradeSelection.finalSubtitle')}
                                 </Typography>
                             </Box>
                         </Stack>
@@ -136,7 +137,7 @@ function FinalGradesSetupContent() {
 
                     {/* Level Cards */}
                     <Stack spacing={2.5}>
-                        {LEVELS.map((level, i) => (
+                        {levels.map((level, i) => (
                             <Box
                                 key={level.id}
                                 component={motion.div}
@@ -180,10 +181,10 @@ function FinalGradesSetupContent() {
                                         <Box flex={1}>
                                             <Stack direction="row" alignItems="center" gap={1.5} mb={0.5}>
                                                 <Typography variant="h5" fontWeight={800} color="text.primary">
-                                                    {level.label}
+                                                    {t(`vice.${level.id}`)}
                                                 </Typography>
                                                 <Chip
-                                                    label="Final Grades"
+                                                    label={t('viceGrades.finalGrades')}
                                                     size="small"
                                                     sx={{
                                                         fontSize: '0.7rem', fontWeight: 700,
@@ -194,7 +195,7 @@ function FinalGradesSetupContent() {
                                                 />
                                             </Stack>
                                             <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                                                {level.description}
+                                                {t(`gradeSelection.${level.id}Description`)}
                                             </Typography>
                                         </Box>
 

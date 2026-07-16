@@ -7,9 +7,10 @@ import SharedCard from "@/components/shared/SharedCard";
 import { useStudentYear } from "@/context/StudentYearContext";
 import { teacherService } from "@/services/teacher.service";
 import { CardData } from "@/types/SharedCard";
-import JuniorIcon from "@/icons/1.svg";
-import WheelerIcon from "@/icons/2.svg";
-import SeniorIcon from "@/icons/3.svg";
+import Looks3Icon from "@mui/icons-material/Looks3";
+import LooksOneIcon from "@mui/icons-material/LooksOne";
+import LooksTwoIcon from "@mui/icons-material/LooksTwo";
+import { useLanguage } from "@/context/LanguageContext";
 
 const YEAR_LABELS: Record<string, string> = {
   junior: "Junior",
@@ -18,18 +19,19 @@ const YEAR_LABELS: Record<string, string> = {
 };
 
 const getYearIcon = (yearId: string): CardData["icon"] => {
-  if (yearId === "wheeler") return WheelerIcon;
-  if (yearId === "senior") return SeniorIcon;
-  return JuniorIcon;
+  if (yearId === "wheeler") return LooksTwoIcon;
+  if (yearId === "senior") return Looks3Icon;
+  return LooksOneIcon;
 };
 
 export default function TeacherDashboard() {
   const { displayYear, setCurrentYear } = useStudentYear();
+  const { t } = useLanguage();
   const [cards, setCards] = useState<CardData[]>([]);
   const [profile, setProfile] = useState({ 
-    name: "Teacher", 
+    name: "",
     year: "", 
-    subtitle: "Manage your subjects and classes" 
+    subtitle: ""
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +53,12 @@ export default function TeacherDashboard() {
         if (dashboardRes.status === "fulfilled") {
           const teacherCards: CardData[] = dashboardRes.value.map((yearBlock) => ({
             id: yearBlock.yearId,
-            title: YEAR_LABELS[yearBlock.yearId] ?? yearBlock.yearId,
+            title: YEAR_LABELS[yearBlock.yearId]
+              ? t(`vice.${yearBlock.yearId}`, YEAR_LABELS[yearBlock.yearId])
+              : yearBlock.yearId,
             description: yearBlock.classes.length
               ? yearBlock.classes.map((cls) => cls.className).join(" - ")
-              : "No classes assigned yet.",
+              : t("dashboards.noAssignedClasses"),
             href: `/teacher/classes?year=${encodeURIComponent(yearBlock.yearId)}`,
             icon: getYearIcon(yearBlock.yearId),
           }));
@@ -64,25 +68,27 @@ export default function TeacherDashboard() {
           setError(
             dashboardRes.reason instanceof Error
               ? dashboardRes.reason.message
-              : "Failed to load assigned academic years."
+              : t("dashboards.failedLoadYears")
           );
         }
 
         if (profileRes.status === "fulfilled" && profileRes.value) {
           setProfile({
-            name: profileRes.value.name ?? "Teacher",
+            name: profileRes.value.name ?? t("dashboards.teacher"),
             year: profileRes.value.currentAcademicYear
-              ? YEAR_LABELS[profileRes.value.currentAcademicYear]
+              ? (YEAR_LABELS[profileRes.value.currentAcademicYear]
+                  ? t(`vice.${profileRes.value.currentAcademicYear}`, YEAR_LABELS[profileRes.value.currentAcademicYear])
+                  : profileRes.value.currentAcademicYear)
               : "",
-            subtitle: "Manage your subjects and classes",
+            subtitle: t("dashboards.manageSubjectsClasses"),
           });
-          if (profileRes.value.currentAcademicYear) {
-            setCurrentYear(profileRes.value.currentAcademicYear);
+          if (profileRes.value.currentAcademicYear && profileRes.value.currentAcademicYear in YEAR_LABELS) {
+            setCurrentYear(profileRes.value.currentAcademicYear as "junior" | "wheeler" | "senior");
           }
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Something went wrong");
+          setError(e instanceof Error ? e.message : t("dashboards.somethingWentWrong"));
           setCards([]);
         }
       }
@@ -93,7 +99,7 @@ export default function TeacherDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [setCurrentYear]);
+  }, [setCurrentYear, t]);
 
   return (
     <>
@@ -131,13 +137,13 @@ export default function TeacherDashboard() {
           >
             <DashboardHeader
               name={profile.name}
-              year={profile.year || YEAR_LABELS[displayYear] || displayYear}
-              subtitle={profile.subtitle}
+              year={profile.year || t(`vice.${displayYear}`, YEAR_LABELS[displayYear] || displayYear)}
+              subtitle={profile.subtitle || t("dashboards.manageSubjectsClasses")}
             >
               {loading ? (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <CircularProgress />
-                  <Typography color="text.secondary">Loading...</Typography>
+                  <Typography color="text.secondary">{t("common.loading")}</Typography>
                 </Box>
               ) : (
                 <>
@@ -148,7 +154,7 @@ export default function TeacherDashboard() {
                   )}
                   {!error && cards.length === 0 && (
                     <Typography color="text.secondary" sx={{ mb: 1 }}>
-                      No academic years assigned to your account yet.
+                      {t("dashboards.noAssignedYears")}
                     </Typography>
                   )}
                   <Box

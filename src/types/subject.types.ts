@@ -7,6 +7,7 @@ export interface Subject {
 
 export interface CreateSubjectPayload {
   subjectName: string;
+  yearName: string;
   stage: string;
 }
 

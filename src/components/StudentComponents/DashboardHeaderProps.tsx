@@ -11,7 +11,7 @@ interface DashboardHeaderProps {
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ name, year, subtitle }) => {
   return (
-    <Box sx={{ mb: 5, textAlign: "left" }}>
+    <Box sx={{ mb: 5, textAlign: "start" }}>
       <Typography
         variant="h3"
         sx={{

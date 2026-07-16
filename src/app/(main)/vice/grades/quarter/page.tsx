@@ -8,6 +8,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -19,15 +20,15 @@ const itemVariants = {
     visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 90, damping: 15 } },
 };
 
-const LEVELS = [
-    { id: 'junior',   label: 'Junior',   emoji: '🌱', color: '#F59E0B', description: 'First academic year — foundational studies' },
-    { id: 'wheeler',  label: 'Wheeler',  emoji: '⚡', color: '#06B6D4', description: 'Second academic year — intermediate coursework' },
-    { id: 'senior',   label: 'Senior',   emoji: '🎓', color: '#8B5CF6', description: 'Third academic year — advanced curriculum' },
-];
-
 export default function ViceGradesQuarterPage() {
     const theme = useTheme();
+    const { t } = useLanguage();
     const primary = theme.palette.primary.main;
+    const levels = [
+        { id: 'junior', emoji: '🌱', color: '#F59E0B' },
+        { id: 'wheeler', emoji: '⚡', color: '#06B6D4' },
+        { id: 'senior', emoji: '🎓', color: '#8B5CF6' },
+    ];
 
     return (
         <Box
@@ -88,7 +89,7 @@ export default function ViceGradesQuarterPage() {
                                 }}
                             >
                                 <ArrowBackIcon fontSize="small" />
-                                <Typography variant="body2" fontWeight={600} color="inherit">Back to Dashboard</Typography>
+                                <Typography variant="body2" fontWeight={600} color="inherit">{t('gradeSelection.backToDashboard')}</Typography>
                             </Box>
                         </Link>
 
@@ -114,10 +115,10 @@ export default function ViceGradesQuarterPage() {
                                         lineHeight: 1.1,
                                     }}
                                 >
-                                    Quarter Grades
+                                    {t('viceGrades.quarterGrades')}
                                 </Typography>
                                 <Typography variant="body1" color="text.secondary" fontWeight={500} mt={0.5}>
-                                    Select an academic level to manage quarter grade entries
+                                    {t('gradeSelection.quarterSubtitle')}
                                 </Typography>
                             </Box>
                         </Stack>
@@ -125,7 +126,7 @@ export default function ViceGradesQuarterPage() {
 
                     {/* Level Cards */}
                     <Stack spacing={2.5}>
-                        {LEVELS.map((level, i) => (
+                        {levels.map((level, i) => (
                             <Box
                                 key={level.id}
                                 component={motion.div}
@@ -169,10 +170,10 @@ export default function ViceGradesQuarterPage() {
                                         <Box flex={1}>
                                             <Stack direction="row" alignItems="center" gap={1.5} mb={0.5}>
                                                 <Typography variant="h5" fontWeight={800} color="text.primary">
-                                                    {level.label}
+                                                    {t(`vice.${level.id}`)}
                                                 </Typography>
                                                 <Chip
-                                                    label="Quarter Grades"
+                                                    label={t('viceGrades.quarterGrades')}
                                                     size="small"
                                                     sx={{
                                                         fontSize: '0.7rem', fontWeight: 700,
@@ -183,7 +184,7 @@ export default function ViceGradesQuarterPage() {
                                                 />
                                             </Stack>
                                             <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                                                {level.description}
+                                                {t(`gradeSelection.${level.id}Description`)}
                                             </Typography>
                                         </Box>
 

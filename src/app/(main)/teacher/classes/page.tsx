@@ -20,6 +20,7 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import GroupsIcon from "@mui/icons-material/Groups";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { teacherService, SubjectWithClasses } from "@/services/teacher.service";
+import { useLanguage } from "@/context/LanguageContext";
 
 const LEVEL_LABEL: Record<string, string> = {
   junior: "Junior",
@@ -55,6 +56,7 @@ function ClassRow({
 }) {
   const router = useRouter();
   const theme = useTheme();
+  const { t, dir } = useLanguage();
 
   const handleClick = () => {
     const params = new URLSearchParams({
@@ -86,7 +88,7 @@ function ClassRow({
           "&:last-child": { borderBottom: "none" },
           "&:hover": {
             bgcolor: alpha(accentColor, 0.07),
-            transform: "translateX(4px)",
+            transform: `translateX(${dir === "rtl" ? "-4px" : "4px"})`,
           },
         }}
       >
@@ -106,7 +108,7 @@ function ClassRow({
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography variant="caption" color="text.secondary">
-            View students & grade
+            {t("teacherModule.viewStudentsAndGrade")}
           </Typography>
           <ArrowForwardIcon sx={{ fontSize: 16, color: accentColor }} />
         </Box>
@@ -119,6 +121,7 @@ function ClassesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const theme = useTheme();
+  const { t } = useLanguage();
   const year = searchParams?.get("year") || "junior";
 
   const [subjects, setSubjects] = useState<SubjectWithClasses[]>([]);
@@ -126,7 +129,7 @@ function ClassesContent() {
   const [error, setError] = useState<string | null>(null);
 
   const accentColor = LEVEL_COLORS[year] ?? "#FFC600";
-  const levelLabel = LEVEL_LABEL[year] ?? year;
+  const levelLabel = LEVEL_LABEL[year] ? t(`vice.${year}`, LEVEL_LABEL[year]) : year;
 
   useEffect(() => {
     let cancelled = false;
@@ -143,13 +146,13 @@ function ClassesContent() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load classes");
+          setError(err instanceof Error ? err.message : t("teacherModule.failedLoadClasses"));
           setLoading(false);
         }
       });
 
     return () => { cancelled = true; };
-  }, [year]);
+  }, [year, t]);
 
   return (
     <Box
@@ -175,11 +178,11 @@ function ClassesContent() {
                 "&:hover": { bgcolor: alpha(accentColor, 0.08) },
               }}
             >
-              Back to Dashboard
+              {t("teacherModule.backToDashboard")}
             </Button>
             <Box sx={{ height: 20, width: 1, bgcolor: alpha(theme.palette.divider, 0.5) }} />
             <Chip
-              label={`${levelLabel} Level`}
+              label={`${levelLabel} ${t("teacherModule.academicYear")}`}
               size="small"
               sx={{ bgcolor: alpha(accentColor, 0.12), color: accentColor, fontWeight: 700, border: `1px solid ${alpha(accentColor, 0.3)}` }}
             />
@@ -195,10 +198,10 @@ function ClassesContent() {
               WebkitTextFillColor: "transparent",
             }}
           >
-            Your Classes
+            {t("teacherModule.yourClasses")}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 5 }}>
-            Select a class to view students and enter grades for the <strong>{levelLabel}</strong> year.
+            {t("teacherModule.selectClassDescription").replace("{year}", levelLabel)}
           </Typography>
         </motion.div>
 
@@ -220,9 +223,9 @@ function ClassesContent() {
         {!loading && !error && subjects.length === 0 && (
           <Box sx={{ textAlign: "center", py: 12 }}>
             <GroupsIcon sx={{ fontSize: 64, color: alpha(theme.palette.text.secondary, 0.2), mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" fontWeight={600}>No classes assigned</Typography>
+            <Typography variant="h6" color="text.secondary" fontWeight={600}>{t("teacherModule.noClassesAssigned")}</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              You have no classes assigned for the {levelLabel} year yet.
+              {t("teacherModule.noClassesAssignedDescription").replace("{year}", levelLabel)}
             </Typography>
           </Box>
         )}
@@ -279,7 +282,7 @@ function ClassesContent() {
                       {subject.subjectName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {subject.classes.length} class{subject.classes.length !== 1 ? "es" : ""}
+                      {t("teacherModule.classCount").replace("{count}", String(subject.classes.length))}
                     </Typography>
                   </Box>
                 </Box>
@@ -287,7 +290,7 @@ function ClassesContent() {
                 {/* Classes list */}
                 {subject.classes.length === 0 ? (
                   <Box sx={{ px: 3, py: 3, textAlign: "center" }}>
-                    <Typography variant="body2" color="text.secondary">No classes for this subject</Typography>
+                    <Typography variant="body2" color="text.secondary">{t("teacherModule.noClassesForSubject")}</Typography>
                   </Box>
                 ) : (
                   subject.classes.map((cls, ci) => (

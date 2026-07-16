@@ -8,6 +8,7 @@ import { useStudentYear } from "@/context/StudentYearContext";
 import { mapStudentCardsToSharedCards } from "@/mappers/StudentCards.mapper";
 import { studentService } from "@/services/student.service";
 import { CardData } from "@/types/SharedCard";
+import { useLanguage } from "@/context/LanguageContext";
 
 const YEAR_LABELS: Record<string, string> = {
   junior: "Junior",
@@ -17,8 +18,9 @@ const YEAR_LABELS: Record<string, string> = {
 
 export default function StudentDashboard() {
   const { displayYear, setCurrentYear } = useStudentYear();
+  const { t } = useLanguage();
   const [cards, setCards] = useState<CardData[]>([]);
-  const [profile, setProfile] = useState({ name: "Student", year: "", subtitle: "Your academic overview" });
+  const [profile, setProfile] = useState({ name: "", year: "", subtitle: "" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,9 +44,9 @@ export default function StudentDashboard() {
 
         if (profileRes.status === "fulfilled" && profileRes.value) {
           setProfile({
-            name: profileRes.value.name ?? "Student",
+            name: profileRes.value.name ?? t("dashboards.student"),
             year: profileRes.value.year ?? "",
-            subtitle: profileRes.value.subtitle ?? "Your academic overview",
+            subtitle: profileRes.value.subtitle ?? t("dashboards.academicOverview"),
           });
           if (profileRes.value.currentAcademicYear) {
             setCurrentYear(profileRes.value.currentAcademicYear);
@@ -52,7 +54,7 @@ export default function StudentDashboard() {
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Something went wrong");
+          setError(e instanceof Error ? e.message : t("dashboards.somethingWentWrong"));
           setCards([]);
         }
       }
@@ -63,7 +65,7 @@ export default function StudentDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [setCurrentYear]);
+  }, [setCurrentYear, t]);
 
   return (
     <>
@@ -101,13 +103,13 @@ export default function StudentDashboard() {
           >
             <DashboardHeader
               name={profile.name}
-              year={profile.year || YEAR_LABELS[displayYear] || displayYear}
-              subtitle={profile.subtitle}
+              year={profile.year || t(`vice.${displayYear}`, YEAR_LABELS[displayYear] || displayYear)}
+              subtitle={profile.subtitle || t("dashboards.academicOverview")}
             >
               {loading ? (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <CircularProgress />
-                  <Typography color="text.secondary">Loading...</Typography>
+                  <Typography color="text.secondary">{t("common.loading")}</Typography>
                 </Box>
               ) : (
                 <>
@@ -118,7 +120,7 @@ export default function StudentDashboard() {
                   )}
                   {!error && cards.length === 0 && (
                     <Typography color="text.secondary" sx={{ mb: 1 }}>
-                      No dashboard cards available for your account yet.
+                      {t("dashboards.noStudentCards")}
                     </Typography>
                   )}
                   <Box

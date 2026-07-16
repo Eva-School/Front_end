@@ -17,6 +17,7 @@ import { motion } from 'framer-motion';
 import AddStudentModal from '@/components/vice/students/AddStudentModal';
 import { ClassesAPI } from '@/data/classes.api';
 import { ViceStudentsAPI } from '@/data/vice-students.api';
+import { AcademicYearsAPI, type AcademicYearOption } from '@/data/academic-years.api';
 import type { Class } from '@/types/subject.types';
 import type { ViceDepartment, ViceLevel, ViceStudent } from '@/types/vice/students';
 import { useLanguage } from '@/context/LanguageContext';
@@ -43,7 +44,8 @@ export default function ViceStudentsPage() {
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
 
   // Filters
-  const [academicYear, setAcademicYear] = useState<string>('2024-2025');
+  const [academicYear, setAcademicYear] = useState<string>('');
+  const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
   const [department, setDepartment] = useState<ViceDepartment>('OM');
   const [level, setLevel] = useState<ViceLevel>('junior');
 
@@ -72,12 +74,33 @@ export default function ViceStudentsPage() {
     [className, department, academicYear]
   );
 
+  useEffect(() => {
+    let active = true;
+    void AcademicYearsAPI.list()
+      .then((years) => {
+        if (!active) return;
+        queueMicrotask(() => {
+          setAcademicYears(years);
+          setAcademicYear((current) => current || years.find((year) => year.isActive)?.yearName || years[0]?.yearName || '');
+        });
+      })
+      .catch(() => {
+        if (active) appToast.error(t('academicYears.loadFailed', 'Unable to load academic years.'));
+      });
+
+    return () => { active = false; };
+  }, [t]);
+
   /* ── Load Classes ── */
   const loadClasses = useCallback(async () => {
+    if (!academicYear) {
+      setClasses([]);
+      return;
+    }
     setClassesError(null);
     setClassesLoading(true);
     try {
-      const data = await ClassesAPI.getByYear(academicYear);
+      const data = await ClassesAPI.getByYear(academicYear, level);
       setClasses(data);
     } catch (e: unknown) {
       setClassesError(e instanceof Error ? e.message : t('students.failedLoadClasses', 'Failed to load classes'));
@@ -85,18 +108,15 @@ export default function ViceStudentsPage() {
     } finally {
       setClassesLoading(false);
     }
-  }, [academicYear, t]);
+  }, [academicYear, level, t]);
 
   /* ── Load Pool Students (unassigned — no classId) ── */
   const loadPoolStudents = useCallback(async () => {
     setPoolError(null);
     setPoolLoading(true);
     try {
-      // Call without classId → backend returns students not assigned to any class
-      const data = await ViceStudentsAPI.list({ year: level, department });
-      // Filter to only students without a class (className empty / undefined)
-      const pool = data.filter((s) => !s.className || s.className.trim() === '');
-      setPoolStudents(pool);
+      const data = await ViceStudentsAPI.list({ year: level, department, unassigned: true });
+      setPoolStudents(data);
     } catch (e: unknown) {
       setPoolError(e instanceof Error ? e.message : t('students.failedLoadStudents', 'Failed to load students'));
       setPoolStudents([]);
@@ -124,7 +144,7 @@ export default function ViceStudentsPage() {
     }
     setCreatingClass(true);
     try {
-      const created = await ClassesAPI.create({ yearId: academicYear, department, className: className.trim() });
+      const created = await ClassesAPI.create({ yearId: academicYear, stage: level, department, className: className.trim() });
       setClassName('');
       await loadClasses();
       setSelectedClassId(created.classId);
@@ -266,8 +286,8 @@ export default function ViceStudentsPage() {
                       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                         <FormControl fullWidth size="small" sx={{ maxWidth: 200 }}>
                           <InputLabel>Academic Year</InputLabel>
-                          <Select label="Academic Year" value={academicYear} onChange={(e) => setAcademicYear(String(e.target.value))} sx={{ borderRadius: 2 }}>
-                            <MenuItem value="2024-2025">2024-2025</MenuItem>
+                          <Select label="Academic Year" value={academicYear} onChange={(e) => setAcademicYear(String(e.target.value))} disabled={academicYears.length === 0} sx={{ borderRadius: 2 }}>
+                            {academicYears.map((year) => <MenuItem key={year.yearName} value={year.yearName}>{year.yearName}</MenuItem>)}
                           </Select>
                         </FormControl>
                         <FormControl fullWidth size="small" sx={{ maxWidth: 200 }}>
@@ -408,8 +428,8 @@ export default function ViceStudentsPage() {
                         <Box>
                           <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>ACADEMIC YEAR</Typography>
                           <FormControl size="small" sx={{ minWidth: 140 }}>
-                            <Select value={academicYear} onChange={(e) => setAcademicYear(String(e.target.value))} sx={{ borderRadius: 2 }}>
-                              <MenuItem value="2024-2025">2024-2025</MenuItem>
+                            <Select value={academicYear} onChange={(e) => setAcademicYear(String(e.target.value))} disabled={academicYears.length === 0} sx={{ borderRadius: 2 }}>
+                              {academicYears.map((year) => <MenuItem key={year.yearName} value={year.yearName}>{year.yearName}</MenuItem>)}
                             </Select>
                           </FormControl>
                         </Box>
@@ -610,7 +630,6 @@ export default function ViceStudentsPage() {
         <AddStudentModal
           open={isAddStudentModalOpen}
           onClose={() => setIsAddStudentModalOpen(false)}
-          classId={selectedClassId}
           year={level}
           department={department}
           onSubmit={async (payload) => {
@@ -618,7 +637,6 @@ export default function ViceStudentsPage() {
               ...payload,
               department,
               year: level,
-              classId: selectedClassId || 0,
             });
             await loadPoolStudents();
             appToast.success(t('modal.studentAddedSuccess'));

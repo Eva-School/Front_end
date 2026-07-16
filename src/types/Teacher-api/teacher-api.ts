@@ -14,8 +14,8 @@ export interface TeacherSubject {
 export interface TeacherProfileResponse {
   name: string;
   subtitle?: string;
-  /** Current academic year (e.g. "junior", "wheeler", "senior") */
-  currentAcademicYear?: "junior" | "wheeler" | "senior";
+  /** Academic-year name as returned by the backend (for example, "2026-2027"). */
+  currentAcademicYear?: string;
 }
 
 export interface TeacherClassesResponse {
@@ -38,8 +38,10 @@ export interface TeacherStudent {
   q2?: number;
   q3?: number;
   q4?: number;
-  quarterGrade?: number;
-  teacherGrade?: number;
-  finalGrade?: number; // Grade from admin (passing grade threshold)
-  status?: "pass" | "fail"; // Auto-calculated: pass if studentGrade >= finalGrade
+  finalGrade?: number;
+  maxQ1?: number;
+  maxQ2?: number;
+  maxQ3?: number;
+  maxQ4?: number;
+  status?: string;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import en from "../../messages/en.json";
 import ar from "../../messages/ar.json";
 
@@ -59,6 +59,19 @@ export function LanguageProvider({
     () => setLanguage(language === "en" ? "ar" : "en"),
     [language, setLanguage]
   );
+
+  useEffect(() => {
+    const direction = language === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = language;
+    document.documentElement.dir = direction;
+    document.body.dir = direction;
+    document.documentElement.style.setProperty(
+      "--app-font-family",
+      language === "ar"
+        ? "var(--font-cairo), Arial, sans-serif"
+        : "var(--font-noto-sans), Arial, sans-serif"
+    );
+  }, [language]);
 
   const value = useMemo<LanguageContextValue>(() => {
     const dict = dictionaries[language];

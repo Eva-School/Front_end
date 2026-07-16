@@ -15,7 +15,7 @@ export default function DashboardLayout({
       minHeight="100vh"
       display="flex"
       flexDirection="column"
-      overflow="hidden"
+      sx={{ overflowX: "hidden" }}
       aria-label="Main content section"
     >
       {/* Navbar */}

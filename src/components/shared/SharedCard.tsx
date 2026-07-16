@@ -71,7 +71,7 @@ const SharedCard: React.FC<SharedCardProps> = ({
               <Icon width={40} height={40} />
             </Box>
 
-            <Box sx={{ marginLeft: 2.5, flex: 1 }}>
+            <Box sx={{ marginInlineStart: 2.5, flex: 1 }}>
               <Typography variant="body4" color="text.primary">
                 {title}
               </Typography>
@@ -81,7 +81,7 @@ const SharedCard: React.FC<SharedCardProps> = ({
           <Divider sx={{ my: 2.5 }} />
 
           {/* Description */}
-          <Box sx={{ marginLeft: 2.5 }}>
+          <Box sx={{ marginInlineStart: 2.5 }}>
             <Typography variant="h5" color="text.secondary">
               {description}
             </Typography>

@@ -31,7 +31,8 @@ import { useThemeMode } from '@/context/ThemeModeContext';
 import AccessibleIconButton from '@/components/a11y/AccessibleIconButton';
 import NotificationBell from '@/components/shared/NotificationBell';
 
-const LOGO_SRC = '/Images/login/logo.png';
+const LIGHT_LOGO_SRC = '/Images/login/logo.png';
+const DARK_LOGO_SRC = '/Images/login/logo_darkmode-trimmed.webp';
 
 type NavLink = { label: string; href: string };
 
@@ -42,6 +43,7 @@ export default function SharedNavbar() {
     const router = useRouter();
     const { t, toggleLanguage } = useLanguage();
     const { mode, toggleMode } = useThemeMode();
+    const usesDarkLogo = mode === 'dark';
     const {
         title,
         subtitle,
@@ -109,7 +111,7 @@ export default function SharedNavbar() {
                 position="sticky"
                 elevation={0}
                 sx={{
-                    backgroundColor: alpha(theme.palette.background.paper, 0.75),
+                    backgroundColor: theme.palette.background.paper,
                     backdropFilter: 'blur(24px)',
                     color: theme.palette.text.primary,
                     borderRadius: '0 0 24px 24px',
@@ -118,6 +120,8 @@ export default function SharedNavbar() {
                     px: { xs: 0.6, md: 2 },
                     transition: 'all 0.3s ease',
                     zIndex: theme.zIndex.drawer + 1,
+                    isolation: 'isolate',
+                    overflow: 'visible',
                 }}
             >
                 <Toolbar
@@ -133,12 +137,16 @@ export default function SharedNavbar() {
                             whileHover={{ rotate: 5, scale: 1.05 }}
                         >
                             <Image
-                                src={LOGO_SRC}
-                                alt="Logo"
+                                src={usesDarkLogo ? DARK_LOGO_SRC : LIGHT_LOGO_SRC}
+                                alt="EVA Pharma"
                                 width={50}
                                 height={40}
                                 priority
-                                style={{ objectFit: 'contain' }}
+                                style={{
+                                    objectFit: 'contain',
+                                    display: 'block',
+                                    maxHeight: 40,
+                                }}
                             />
                         </Box>
                         <Box>
@@ -236,7 +244,7 @@ export default function SharedNavbar() {
                                 }}
                             >
                                 <Avatar sx={{ width: 30, height: 30, mr: { sm: 1.5 } }} />
-                                <Box sx={{ display: { xs: 'none', sm: 'block' }, textAlign: 'left' }}>
+                                <Box sx={{ display: { xs: 'none', sm: 'block' }, textAlign: 'start' }}>
                                     <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1 }}>{user.username}</Typography>
                                     <Typography variant="caption" sx={{ opacity: 0.8, fontSize: '0.7rem' }}>
                                         {user.role}
@@ -339,7 +347,7 @@ export default function SharedNavbar() {
                         backgroundColor: alpha(theme.palette.background.paper, 0.95),
                         backdropFilter: 'blur(20px)',
                         borderRadius: '24px 0 0 24px',
-                        borderLeft: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                        borderInlineStart: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                         boxShadow: `-10px 0 40px ${alpha(theme.palette.common.black, 0.1)}`,
                     },
                 }}

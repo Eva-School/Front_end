@@ -6,8 +6,8 @@ export const TeachersAPI = {
     return secureFetch(`${API_BASE_URL}/teachers`) as Promise<Teacher[]>;
   },
 
-  create(payload: CreateTeacherPayload) {
-    return secureFetch(`${API_BASE_URL}/teachers`, {
+  create(payload: CreateTeacherPayload): Promise<Teacher> {
+    return secureFetch<Teacher>(`${API_BASE_URL}/teachers`, {
       method: "POST",
       body: JSON.stringify(payload),
     });

@@ -4,6 +4,7 @@ import AppProviders from "@/providers/AppProviders";
 import AccessibilityScript from "@/providers/AccessibilityScript";
 import type { AppLanguage } from "@/context/LanguageContext";
 import type { ThemeMode } from "@/context/ThemeModeContext";
+import { cairo, notoSans } from "@/styles/theme/font";
 
 const LANGUAGE_COOKIE = "app_language";
 const THEME_COOKIE = "app_theme_mode";
@@ -27,7 +28,7 @@ export default async function RootLayout({
   const dir = initialLanguage === "ar" ? "rtl" : "ltr";
 
   return (
-    <html lang={initialLanguage} dir={dir} suppressHydrationWarning>
+    <html lang={initialLanguage} dir={dir} className={`${notoSans.variable} ${cairo.variable}`} suppressHydrationWarning>
       <body dir={dir}>
         <AccessibilityScript />
         <AppProviders initialLanguage={initialLanguage} initialThemeMode={initialThemeMode}>

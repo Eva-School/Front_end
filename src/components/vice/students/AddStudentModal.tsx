@@ -10,7 +10,6 @@ import AccessibleIconButton from '@/components/a11y/AccessibleIconButton';
 interface AddStudentModalProps {
     open: boolean;
     onClose: () => void;
-    classId: number | null;
     year: ViceLevel;
     department: ViceDepartment;
     onSubmit: (payload: {
@@ -23,7 +22,7 @@ interface AddStudentModalProps {
     }) => Promise<void>;
 }
 
-export default function AddStudentModal({ open, onClose, classId, year, department, onSubmit }: AddStudentModalProps) {
+export default function AddStudentModal({ open, onClose, year, department, onSubmit }: AddStudentModalProps) {
     const { t } = useLanguage();
     const [activeStep] = useState(0);
     const steps = [1, 2, 3];
@@ -41,7 +40,6 @@ export default function AddStudentModal({ open, onClose, classId, year, departme
     const [success, setSuccess] = useState(false);
 
     const disabledReason = useMemo(() => {
-        if (!classId) return t('modal.pleaseSelectClassFirst');
         if (!form.firstName.trim()) return t('auth.usernameRequired', 'First name is required');
         if (!form.lastName.trim()) return t('teachers.lastNameRequired', 'Last name is required');
         
@@ -58,7 +56,7 @@ export default function AddStudentModal({ open, onClose, classId, year, departme
         if (!/^\d{8,15}$/.test(phone)) return "Phone must contain 8 to 15 digits";
         
         return null;
-    }, [classId, form, t]);
+    }, [form, t]);
 
     const handleSave = async () => {
         setError(null);
@@ -160,7 +158,7 @@ export default function AddStudentModal({ open, onClose, classId, year, departme
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
                 <Alert severity="info" sx={{ mb: 2 }}>
-                    {t('modal.year')}: <b>{year}</b> — {t('students.department')}: <b>{department}</b> — {t('modal.class')}: <b>{classId ?? '—'}</b>
+                    {t('modal.year')}: <b>{year}</b> — {t('students.department')}: <b>{department}</b> — {t('modal.class')}: <b>{t('students.unassigned', 'Unassigned')}</b>
                 </Alert>
 
                 <Box

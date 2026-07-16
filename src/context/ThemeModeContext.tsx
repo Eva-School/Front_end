@@ -1,9 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
+import rtlPlugin from "stylis-plugin-rtl";
 import { CssBaseline, GlobalStyles } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import { createAppTheme } from "@/styles/theme";
+import { useLanguage } from "@/context/LanguageContext";
 
 export type ThemeMode = "light" | "dark";
 
@@ -17,6 +21,8 @@ const ThemeModeContext = createContext<ThemeModeContextValue | undefined>(undefi
 
 const STORAGE_KEY = "app_theme_mode";
 const COOKIE_KEY = "app_theme_mode";
+const ltrCache = createCache({ key: "mui" });
+const rtlCache = createCache({ key: "mui-rtl", stylisPlugins: [rtlPlugin] });
 
 function resolveInitialMode(initialMode: ThemeMode): ThemeMode {
   if (typeof window === "undefined") return initialMode;
@@ -32,6 +38,7 @@ export function ThemeModeProvider({
   initialMode: ThemeMode;
   children: React.ReactNode;
 }) {
+  const { language } = useLanguage();
   const [mode, setModeState] = useState<ThemeMode>(() => resolveInitialMode(initialMode));
 
   useEffect(() => {
@@ -49,21 +56,23 @@ export function ThemeModeProvider({
     [mode]
   );
 
-  const theme = useMemo(() => createAppTheme(mode), [mode]);
+  const theme = useMemo(() => createAppTheme(mode, language), [mode, language]);
 
   return (
     <ThemeModeContext.Provider value={contextValue}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <GlobalStyles
-          styles={{
-            ":root": {
-              colorScheme: mode,
-            },
-          }}
-        />
-        {children}
-      </ThemeProvider>
+      <CacheProvider value={language === "ar" ? rtlCache : ltrCache}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <GlobalStyles
+            styles={{
+              ":root": {
+                colorScheme: mode,
+              },
+            }}
+          />
+          {children}
+        </ThemeProvider>
+      </CacheProvider>
     </ThemeModeContext.Provider>
   );
 }

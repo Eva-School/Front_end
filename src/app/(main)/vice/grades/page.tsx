@@ -20,6 +20,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SchoolIcon from '@mui/icons-material/School';
 import { API_BASE_URL, secureFetch } from '@/config/api.config';
+import { useLanguage } from '@/context/LanguageContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,8 +57,14 @@ const itemVariants = {
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, language: 'en' | 'ar'): string {
     const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+    if (language === 'ar') {
+        if (diff < 60) return 'الآن';
+        if (diff < 3600) return `منذ ${Math.floor(diff / 60)} د`;
+        if (diff < 86400) return `منذ ${Math.floor(diff / 3600)} س`;
+        return `منذ ${Math.floor(diff / 86400)} ي`;
+    }
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -128,6 +135,7 @@ function KpiCard({
 
 function ActivityRow({ item }: { item: ActivityItem }) {
     const theme = useTheme();
+    const { language } = useLanguage();
     const initials = item.teacherName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
     const levelColor = item.level === 'senior' ? '#8B5CF6' : item.level === 'wheeler' ? '#06B6D4' : '#F59E0B';
 
@@ -169,7 +177,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
                 />
                 <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: 0.4 }}>
                     <AccessTimeIcon sx={{ fontSize: '0.7rem' }} />
-                    {timeAgo(item.timestamp)}
+                    {timeAgo(item.timestamp, language)}
                 </Typography>
             </Stack>
         </Box>
@@ -180,6 +188,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
 
 export default function ViceGradesDashboard() {
     const theme = useTheme();
+    const { language, t } = useLanguage();
     const primary = theme.palette.primary.main;
     const [openTermModal, setOpenTermModal] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -200,10 +209,10 @@ export default function ViceGradesDashboard() {
     }, []);
 
     const kpiCards = [
-        { icon: <PeopleAltIcon />, value: data?.totalStudents ?? 0, label: 'Total Students', color: primary },
-        { icon: <MenuBookIcon />, value: data?.totalSubjects ?? 0, label: 'Total Subjects', color: '#8B5CF6' },
-        { icon: <PendingActionsIcon />, value: data?.quarterGradesPending ?? 0, label: 'Quarter Grades Pending', color: '#F59E0B' },
-        { icon: <CheckCircleOutlineIcon />, value: data?.finalGradesPending ?? 0, label: 'Final Grades Pending', color: '#10B981' },
+        { icon: <PeopleAltIcon />, value: data?.totalStudents ?? 0, label: t('viceGrades.totalStudents'), color: primary },
+        { icon: <MenuBookIcon />, value: data?.totalSubjects ?? 0, label: t('viceGrades.totalSubjects'), color: '#8B5CF6' },
+        { icon: <PendingActionsIcon />, value: data?.quarterGradesPending ?? 0, label: t('viceGrades.quarterPending'), color: '#F59E0B' },
+        { icon: <CheckCircleOutlineIcon />, value: data?.finalGradesPending ?? 0, label: t('viceGrades.finalPending'), color: '#10B981' },
     ];
 
     const glassCard = {
@@ -276,10 +285,10 @@ export default function ViceGradesDashboard() {
                                         lineHeight: 1.1,
                                     }}
                                 >
-                                    Grades Management
+                                    {t('viceGrades.title')}
                                 </Typography>
                                 <Typography variant="body1" color="text.secondary" fontWeight={500} mt={0.5}>
-                                    Monitor and manage all grade entries across academic levels
+                                    {t('viceGrades.subtitle')}
                                 </Typography>
                             </Box>
                         </Stack>
@@ -327,15 +336,15 @@ export default function ViceGradesDashboard() {
                                         </Box>
                                         <Box flex={1}>
                                             <Typography variant="h5" fontWeight={800} color="text.primary">
-                                                Quarter Grades
+                                                {t('viceGrades.quarterGrades')}
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                                                Set subject maximums & manage Q1–Q4 entries
+                                                {t('viceGrades.quarterSubtitle')}
                                             </Typography>
                                         </Box>
                                         {!loading && (
                                             <Chip
-                                                label={`${data?.quarterGradesPending} pending`}
+                                                label={`${data?.quarterGradesPending} ${t('viceGrades.pending')}`}
                                                 size="small"
                                                 sx={{
                                                     fontWeight: 700,
@@ -350,7 +359,7 @@ export default function ViceGradesDashboard() {
                                     <Divider sx={{ borderColor: alpha(theme.palette.divider, 0.08) }} />
 
                                     <Typography variant="body2" color="text.secondary" lineHeight={1.8}>
-                                        Configure the maximum grade per quarter for each subject. Teachers can then enter student scores within those limits. Once published, grades appear in student dashboards instantly.
+                                        {t('viceGrades.quarterDescription')}
                                     </Typography>
 
                                     <Button
@@ -369,7 +378,7 @@ export default function ViceGradesDashboard() {
                                             '&:hover': { boxShadow: `0 10px 30px ${alpha(primary, 0.5)}` },
                                         }}
                                     >
-                                        Manage Quarter Grades
+                                        {t('viceGrades.manageQuarter')}
                                     </Button>
                                 </Stack>
                             </Card>
@@ -394,15 +403,15 @@ export default function ViceGradesDashboard() {
                                         </Box>
                                         <Box flex={1}>
                                             <Typography variant="h5" fontWeight={800} color="text.primary">
-                                                Final Grades
+                                                {t('viceGrades.finalGrades')}
                                             </Typography>
                                             <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                                                Enter & submit semester final exam results
+                                                {t('viceGrades.finalSubtitle')}
                                             </Typography>
                                         </Box>
                                         {!loading && (
                                             <Chip
-                                                label={`${data?.finalGradesPending} pending`}
+                                                label={`${data?.finalGradesPending} ${t('viceGrades.pending')}`}
                                                 size="small"
                                                 sx={{
                                                     fontWeight: 700,
@@ -417,7 +426,7 @@ export default function ViceGradesDashboard() {
                                     <Divider sx={{ borderColor: alpha(theme.palette.divider, 0.08) }} />
 
                                     <Typography variant="body2" color="text.secondary" lineHeight={1.8}>
-                                        Enter final exam grades using anonymous student codes for full transparency and integrity. Choose Semester 1 or Semester 2 to get started.
+                                        {t('viceGrades.finalDescription')}
                                     </Typography>
 
                                     <Button
@@ -435,7 +444,7 @@ export default function ViceGradesDashboard() {
                                             '&:hover': { boxShadow: `0 10px 30px ${alpha('#10B981', 0.5)}` },
                                         }}
                                     >
-                                        Enter Final Grades
+                                        {t('viceGrades.enterFinal')}
                                     </Button>
                                 </Stack>
                             </Card>
@@ -445,22 +454,42 @@ export default function ViceGradesDashboard() {
                         <Card
                             component={motion.div}
                             variants={itemVariants}
-                            sx={{ ...glassCard, p: 3.5, display: 'flex', flexDirection: 'column' }}
+                            sx={{
+                                ...glassCard,
+                                p: 3.5,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                height: { xs: 500, md: 560 },
+                            }}
                         >
                             <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2.5}>
                                 <Typography variant="h6" fontWeight={800} color="text.primary">
-                                    Recent Activity
+                                    {t('viceGrades.recentActivity')}
                                 </Typography>
                                 {!loading && data?.lastUpdated && (
                                     <Typography variant="caption" color="text.disabled" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                         <AccessTimeIcon sx={{ fontSize: '0.8rem' }} />
-                                        Updated {timeAgo(data.lastUpdated)}
+                                        {t('viceGrades.updated')} {timeAgo(data.lastUpdated, language)}
                                     </Typography>
                                 )}
                             </Stack>
                             <Divider sx={{ mb: 2, borderColor: alpha(theme.palette.divider, 0.08) }} />
 
-                            <Stack spacing={0.5} flex={1}>
+                            <Stack
+                                spacing={0.5}
+                                flex={1}
+                                minHeight={0}
+                                overflow="auto"
+                                pr={0.75}
+                                sx={{
+                                    scrollbarWidth: 'thin',
+                                    '&::-webkit-scrollbar': { width: 6 },
+                                    '&::-webkit-scrollbar-thumb': {
+                                        borderRadius: 8,
+                                        backgroundColor: alpha(theme.palette.text.secondary, 0.28),
+                                    },
+                                }}
+                            >
                                 <>
                                     {loading ? (
                                         Array.from({ length: 4 }).map((_, i) => (
@@ -479,7 +508,7 @@ export default function ViceGradesDashboard() {
                                     ) : (
                                         <Box sx={{ textAlign: 'center', py: 6 }}>
                                             <Typography color="text.disabled" fontWeight={500}>
-                                                No recent activity
+                                                {t('viceGrades.noRecentActivity')}
                                             </Typography>
                                         </Box>
                                     )}
@@ -515,7 +544,7 @@ export default function ViceGradesDashboard() {
             >
                 <Box sx={{ p: 3.5 }}>
                     <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-                        <Typography variant="h6" fontWeight={800}>Select Semester</Typography>
+                        <Typography variant="h6" fontWeight={800}>{t('viceGrades.selectSemester')}</Typography>
                         <IconButton
                             onClick={() => setOpenTermModal(false)}
                             size="small"
@@ -525,7 +554,7 @@ export default function ViceGradesDashboard() {
                         </IconButton>
                     </Stack>
                     <Typography variant="body2" color="text.secondary" mb={3}>
-                        Choose which semester you want to enter final grades for.
+                        {t('viceGrades.selectSemesterDescription')}
                     </Typography>
 
                     <Stack direction="row" spacing={2}>
@@ -549,7 +578,7 @@ export default function ViceGradesDashboard() {
                                     '&:hover': { boxShadow: `0 12px 32px ${alpha('#10B981', 0.5)}` },
                                 }}
                             >
-                                Semester {sem}
+                                {t('viceGrades.semester')} {sem}
                             </Button>
                         ))}
                     </Stack>

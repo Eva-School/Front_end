@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { API_BASE_URL, secureFetch } from '@/config/api.config';
+import { useLanguage } from '@/context/LanguageContext';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -79,6 +80,7 @@ const itemVariants = {
 
 function QuarterSubjectGradesContent() {
     const theme = useTheme();
+    const { t } = useLanguage();
     const params = useParams();
 
     const level = typeof params?.level === 'string' ? params.level : 'junior';
@@ -115,7 +117,7 @@ function QuarterSubjectGradesContent() {
             const classesList = getApiList(classesData, ['value', 'data']);
             const mappedClasses = classesList.map((c) => ({
                 id: getIdentifier(c.classId ?? c.id, ''),
-                name: typeof (c.className ?? c.name) === 'string' ? (c.className ?? c.name) as string : `Class ${String(c.classId ?? '')}`
+                name: typeof (c.className ?? c.name) === 'string' ? (c.className ?? c.name) as string : `${t('quarterEntry.class')} ${String(c.classId ?? '')}`
             }));
             setAvailableClasses(mappedClasses);
 
@@ -141,7 +143,7 @@ function QuarterSubjectGradesContent() {
             const studentsList = getApiList(sheet, ['students']);
             const formattedStudents: StudentQuarterGrade[] = studentsList.map((s) => ({
                 studentId: String(s.studentId ?? s.id),
-                studentName: typeof (s.studentName ?? s.fullName ?? s.name) === 'string' ? (s.studentName ?? s.fullName ?? s.name) as string : 'Unknown',
+                studentName: typeof (s.studentName ?? s.fullName ?? s.name) === 'string' ? (s.studentName ?? s.fullName ?? s.name) as string : t('quarterEntry.unknownStudent'),
                 studentCode: typeof s.studentCode === 'string' ? s.studentCode : '',
                 classId: classId === 'all' ? '' : classId,
                 q1: getNumberOrNull(s.q1),
@@ -158,12 +160,12 @@ function QuarterSubjectGradesContent() {
 
         } catch (error) {
             console.error("Failed to fetch data", error);
-            setSnack({ open: true, msg: 'Failed to load data from database', severity: 'error' });
+            setSnack({ open: true, msg: t('quarterEntry.failedLoad'), severity: 'error' });
             setStudents([]);
         } finally {
             setLoading(false);
         }
-    }, [level, subjectId, department, classId, API]);
+    }, [level, subjectId, department, classId, API, t]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
@@ -176,9 +178,9 @@ function QuarterSubjectGradesContent() {
                 body: JSON.stringify({ maxQuarterGrades: maxGrades }),
             });
             setOriginalMaxGrades(maxGrades);
-            setSnack({ open: true, msg: 'Maximum grades updated successfully!', severity: 'success' });
+            setSnack({ open: true, msg: t('quarterEntry.maxSaved'), severity: 'success' });
         } catch {
-            setSnack({ open: true, msg: 'Network error. Please try again.', severity: 'error' });
+            setSnack({ open: true, msg: t('quarterEntry.networkError'), severity: 'error' });
         } finally {
             setSavingMax(false);
         }
@@ -205,7 +207,7 @@ function QuarterSubjectGradesContent() {
         }
 
         if (classId === 'all' || !Number.isInteger(Number(classId))) {
-            setSnack({ open: true, msg: 'Select one class before saving grades.', severity: 'warning' });
+            setSnack({ open: true, msg: t('quarterEntry.selectClassWarning'), severity: 'warning' });
             setSavingStudents(false);
             return;
         }
@@ -231,16 +233,16 @@ function QuarterSubjectGradesContent() {
                     }),
                 }),
             });
-            setSnack({ open: true, msg: `Saved grades for ${modifiedStudents.length} student(s) successfully!`, severity: 'success' });
+            setSnack({ open: true, msg: t('quarterEntry.studentsSaved', `Saved grades for ${modifiedStudents.length} student(s) successfully!`).replace('{count}', String(modifiedStudents.length)), severity: 'success' });
             setStudents((previous) => previous.map((student) => ({ ...student, ...localGrades[student.studentId] })));
         } catch {
-            setSnack({ open: true, msg: 'Network error. Please try again.', severity: 'error' });
+            setSnack({ open: true, msg: t('quarterEntry.networkError'), severity: 'error' });
         } finally {
             setSavingStudents(false);
         }
     };
 
-    const levelLabel = level.charAt(0).toUpperCase() + level.slice(1);
+    const levelLabel = t(`vice.${level}`, level.charAt(0).toUpperCase() + level.slice(1));
     const subjectLabel = subjectId.charAt(0).toUpperCase() + subjectId.slice(1);
 
     const isMaxGradesChanged = JSON.stringify(maxGrades) !== JSON.stringify(originalMaxGrades);
@@ -287,7 +289,7 @@ function QuarterSubjectGradesContent() {
                                 sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.text.secondary }}
                             >
                                 <ArrowBackIcon fontSize="small" />
-                                <Typography variant="body2" fontWeight={600} color="inherit">Back to Subjects</Typography>
+                                <Typography variant="body2" fontWeight={600} color="inherit">{t('quarterEntry.backToSubjects')}</Typography>
                             </Box>
                         </Link>
 
@@ -315,7 +317,7 @@ function QuarterSubjectGradesContent() {
                                                 lineHeight: 1.1,
                                             }}
                                         >
-                                            {subjectLabel} Setup
+                                            {subjectLabel} {t('quarterEntry.setup')}
                                         </Typography>
                                     </Stack>
                                     <Stack direction="row" gap={1} mt={0.5}>
@@ -325,7 +327,7 @@ function QuarterSubjectGradesContent() {
                                             sx={{ fontWeight: 700, bgcolor: alpha(meta.color, 0.1), color: meta.color }}
                                         />
                                         <Chip
-                                            label="Quarter Grades"
+                                            label={t('viceGrades.quarterGrades')}
                                             size="small"
                                             sx={{ fontWeight: 700, bgcolor: alpha(primaryColor, 0.1), color: primaryColor }}
                                         />
@@ -358,10 +360,10 @@ function QuarterSubjectGradesContent() {
                             <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ md: 'center' }} justifyContent="space-between" mb={3} gap={2}>
                                 <Box>
                                     <Typography variant="h5" fontWeight={800} color="text.primary" gutterBottom>
-                                        Maximum Quarter Grades Setup <Typography component="span" variant="subtitle1" color="error.main" fontWeight={700}>(Static)</Typography>
+                                        {t('quarterEntry.maxSetup')}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" fontWeight={500} maxWidth={600}>
-                                        Set the final maximum score for each quarter. Teachers will use these maximums when entering individual student scores for their classes.
+                                        {t('quarterEntry.maxSetupDescription')}
                                     </Typography>
                                 </Box>
                                 <Button
@@ -378,7 +380,7 @@ function QuarterSubjectGradesContent() {
                                         flexShrink: 0,
                                     }}
                                 >
-                                    {savingMax ? 'Saving...' : 'Save Max Grades'}
+                                    {savingMax ? t('common.saving', 'Saving...') : t('quarterEntry.saveMaxGrades')}
                                 </Button>
                             </Stack>
 
@@ -386,7 +388,7 @@ function QuarterSubjectGradesContent() {
                                 {(['q1', 'q2', 'q3', 'q4'] as const).map((q, i) => (
                                     <Box key={q} sx={{ flex: '1 1 200px' }}>
                                         <Typography variant="subtitle2" fontWeight={700} color="text.secondary" mb={1}>
-                                            Quarter {i + 1} Max Score
+                                            {t('quarterEntry.quarter')} {i + 1} — {t('quarterEntry.maxScore')}
                                         </Typography>
                                         <TextField
                                             fullWidth
@@ -428,12 +430,12 @@ function QuarterSubjectGradesContent() {
                                 <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
                                     <Stack direction="row" alignItems="center" gap={3} flexWrap="wrap">
                                         <Typography variant="h6" fontWeight={800} color="text.primary">
-                                            Student Records
+                                            {t('quarterEntry.studentRecords')}
                                         </Typography>
                                         
                                         <Stack direction="row" alignItems="center" gap={1.5}>
                                             <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                                                Department:
+                                                {t('quarterEntry.department')}:
                                             </Typography>
                                             <RadioGroup row value={department} onChange={(e) => setDepartment(e.target.value)}>
                                                 {['om', 'sd'].map((dep) => (
@@ -448,10 +450,10 @@ function QuarterSubjectGradesContent() {
 
                                         <Stack direction="row" alignItems="center" gap={1.5}>
                                             <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                                                Class:
+                                                {t('quarterEntry.class')}:
                                             </Typography>
                                             <RadioGroup row value={classId} onChange={(e) => setClassId(e.target.value)}>
-                                                <FormControlLabel value="all" control={<Radio size="small" sx={{ color: alpha(primaryColor, 0.4), '&.Mui-checked': { color: primaryColor } }} />} label={<Typography variant="body2" fontWeight={700}>All Classes</Typography>} />
+                                                <FormControlLabel value="all" control={<Radio size="small" sx={{ color: alpha(primaryColor, 0.4), '&.Mui-checked': { color: primaryColor } }} />} label={<Typography variant="body2" fontWeight={700}>{t('quarterEntry.allClasses')}</Typography>} />
                                                 {availableClasses.map((cls) => (
                                                     <FormControlLabel 
                                                         key={cls.id} 
@@ -476,7 +478,7 @@ function QuarterSubjectGradesContent() {
                                             '&:hover': { borderColor: primaryColor, bgcolor: alpha(primaryColor, 0.06) },
                                         }}
                                     >
-                                        {savingStudents ? 'Saving...' : 'Save Student Grades'}
+                                        {savingStudents ? t('common.saving', 'Saving...') : t('quarterEntry.saveStudentGrades')}
                                     </Button>
                                 </Stack>
                             </Box>
@@ -487,16 +489,16 @@ function QuarterSubjectGradesContent() {
                                     <TableHead>
                                         <TableRow sx={{ background: `linear-gradient(90deg, ${alpha(primaryColor, 0.1)}, ${alpha(meta.color, 0.08)})` }}>
                                             <TableCell align="center" sx={{ fontWeight: 800, fontSize: '0.85rem', color: 'text.primary', border: 'none', py: 2 }}>#</TableCell>
-                                            <TableCell sx={{ fontWeight: 800, fontSize: '0.85rem', color: 'text.primary', border: 'none', py: 2 }}>Student Name</TableCell>
+                                            <TableCell sx={{ fontWeight: 800, fontSize: '0.85rem', color: 'text.primary', border: 'none', py: 2 }}>{t('quarterEntry.studentName')}</TableCell>
                                             {(['q1', 'q2', 'q3', 'q4'] as const).map((q, i) => (
                                                 <TableCell key={q} align="center" sx={{ fontWeight: 800, fontSize: '0.85rem', color: 'text.primary', border: 'none', py: 2 }}>
-                                                    Quarter {i + 1}
+                                                    {t('quarterEntry.quarter')} {i + 1}
                                                     <Typography component="span" display="block" variant="caption" color="text.secondary" fontWeight={600}>
-                                                        Max: {originalMaxGrades[q]}
+                                                        {t('quarterEntry.max')}: {originalMaxGrades[q]}
                                                     </Typography>
                                                 </TableCell>
                                             ))}
-                                            <TableCell align="center" sx={{ fontWeight: 800, fontSize: '0.85rem', color: 'text.primary', border: 'none', py: 2 }}>Status</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 800, fontSize: '0.85rem', color: 'text.primary', border: 'none', py: 2 }}>{t('quarterEntry.status')}</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -514,7 +516,7 @@ function QuarterSubjectGradesContent() {
                                                         <TableRow>
                                                             <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                                                                 <Typography color="text.disabled" fontWeight={500}>
-                                                                    No students found for this selection
+                                                                    {t('quarterEntry.noStudents')}
                                                                 </Typography>
                                                             </TableCell>
                                                         </TableRow>
@@ -589,11 +591,11 @@ function QuarterSubjectGradesContent() {
 
                                                                 <TableCell align="center">
                                                                     {isModified ? (
-                                                                        <Chip label="Unsaved" size="small" sx={{ fontWeight: 700, bgcolor: alpha('#F59E0B', 0.12), color: '#F59E0B', fontSize: '0.65rem' }} />
+                                                                        <Chip label={t('quarterEntry.unsaved')} size="small" sx={{ fontWeight: 700, bgcolor: alpha('#F59E0B', 0.12), color: '#F59E0B', fontSize: '0.65rem' }} />
                                                                     ) : hasAnyGrade ? (
-                                                                        <Chip label="Saved" size="small" sx={{ fontWeight: 700, bgcolor: alpha(primaryColor, 0.1), color: primaryColor, fontSize: '0.65rem' }} />
+                                                                        <Chip label={t('quarterEntry.saved')} size="small" sx={{ fontWeight: 700, bgcolor: alpha(primaryColor, 0.1), color: primaryColor, fontSize: '0.65rem' }} />
                                                                     ) : (
-                                                                        <Chip label="Empty" size="small" sx={{ fontWeight: 700, bgcolor: alpha(theme.palette.text.primary, 0.06), color: 'text.disabled', fontSize: '0.65rem' }} />
+                                                                        <Chip label={t('quarterEntry.empty')} size="small" sx={{ fontWeight: 700, bgcolor: alpha(theme.palette.text.primary, 0.06), color: 'text.disabled', fontSize: '0.65rem' }} />
                                                                     )}
                                                                 </TableCell>
                                                             </TableRow>

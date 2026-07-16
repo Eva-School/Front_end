@@ -1,9 +1,14 @@
 
 import { ThemeOptions } from "@mui/material/styles";
-import { notoSans } from "./font";
+import type { AppLanguage } from "@/context/LanguageContext";
 
-export const typography: ThemeOptions["typography"] = {
-    fontFamily: notoSans.style.fontFamily,
+export function getTypography(language: AppLanguage): ThemeOptions["typography"] {
+    const fontFamily = language === "ar"
+        ? "var(--font-cairo), Arial, sans-serif"
+        : "var(--font-noto-sans), Arial, sans-serif";
+
+    return {
+    fontFamily,
     h1: {
         fontWeight: 700,
         fontSize: "clamp(0.6rem, 2vw, 1.1rem)",
@@ -102,4 +107,5 @@ export const typography: ThemeOptions["typography"] = {
 
   
 
-};
+    };
+}

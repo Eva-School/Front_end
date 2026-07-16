@@ -30,25 +30,25 @@ import GetAppIcon from "@mui/icons-material/GetApp";
 import SearchIcon from "@mui/icons-material/Search";
 import SaveIcon from "@mui/icons-material/Save";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import PeopleIcon from "@mui/icons-material/People";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { teacherService } from "@/services/teacher.service";
 import type { TeacherStudent } from "@/types/Teacher-api/teacher-api";
 import { appToast } from "@/hooks/useAppToast";
+import { useLanguage } from "@/context/LanguageContext";
 
 // ---------- Excel Export ----------
-const exportToExcel = (students: TeacherStudent[], subject: string, classId: string, year: string) => {
-  const headers = ["Student Name", "Q1", "Q2", "Q3", "Q4", "Teacher Grade", "Final Grade", "Status"];
+const exportToExcel = (students: TeacherStudent[], subject: string, classId: string, year: string, labels: string[]) => {
+  const headers = labels;
   const rows = students.map((s) => [
     s.name,
     s.q1 ?? "-",
     s.q2 ?? "-",
     s.q3 ?? "-",
     s.q4 ?? "-",
-    s.teacherGrade ?? "-",
     s.finalGrade ?? "-",
-    s.status?.toUpperCase() ?? "-",
+    s.status ?? "-",
   ]);
 
   const csvContent = [
@@ -71,13 +71,14 @@ const exportToExcel = (students: TeacherStudent[], subject: string, classId: str
 function QuarterCell({
   value,
   onChange,
-  label,
+  label, max,
   accentColor,
 }: {
   value: string;
   onChange: (v: string) => void;
   label: string;
   accentColor: string;
+  max?: number;
 }) {
   return (
     <Tooltip title={label} arrow>
@@ -86,7 +87,7 @@ function QuarterCell({
         type="number"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        inputProps={{ min: 0, max: 100, style: { textAlign: "center", padding: "6px 4px", width: 52 } }}
+        inputProps={{ min: 0, max, style: { textAlign: "center", padding: "6px 4px", width: 52 } }}
         sx={{
           "& .MuiOutlinedInput-root": {
             borderRadius: 1.5,
@@ -111,9 +112,10 @@ function GradeContent() {
   const theme = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, dir } = useLanguage();
 
   const classId = searchParams?.get("classId") ?? "";
-  const subject = searchParams?.get("subject") ?? "Subject";
+  const subject = searchParams?.get("subject") ?? t("teacherModule.subject");
   const year = searchParams?.get("year") ?? "junior";
   const subjectId = searchParams?.get("subjectId") ?? "";
 
@@ -136,12 +138,16 @@ function GradeContent() {
 
   // Load students
   useEffect(() => {
-    if (!classId) return;
+    if (!classId || !subjectId) {
+      setError(t("teacherModule.missingGradeContext"));
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    teacherService.getClassStudents(classId).then((data) => {
+    teacherService.getClassStudents(classId, subjectId).then((data) => {
       if (cancelled) return;
       const sts = data.students || [];
       setStudents(sts);
@@ -159,30 +165,38 @@ function GradeContent() {
       setLoading(false);
     }).catch((err) => {
       if (!cancelled) {
-        setError(err instanceof Error ? err.message : "Failed to load students");
+        setError(err instanceof Error ? err.message : t("teacherModule.failedLoadStudents"));
         setLoading(false);
       }
     });
 
     return () => { cancelled = true; };
-  }, [classId]);
+  }, [classId, subjectId, t]);
 
   const filtered = students.filter((s) =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const passCount = students.filter((s) => s.status === "pass").length;
-  const failCount = students.filter((s) => s.status === "fail").length;
+  const enteredCount = students.filter((s) => [s.q1, s.q2, s.q3, s.q4].some((value) => value != null)).length;
+  const pendingCount = students.length - enteredCount;
   const avgGrade =
-    students.length > 0 && students.some((s) => s.finalGrade != null)
+    students.length > 0 && students.some((s) => [s.q1, s.q2, s.q3, s.q4].some((value) => value != null))
       ? (
-          students.reduce((acc, s) => acc + (s.finalGrade ?? 0), 0) /
-          students.filter((s) => s.finalGrade != null).length
+          students.reduce((acc, s) => acc + [s.q1, s.q2, s.q3, s.q4].filter((value): value is number => value != null).reduce((sum, value) => sum + value, 0), 0) /
+          students.reduce((count, s) => count + [s.q1, s.q2, s.q3, s.q4].filter((value) => value != null).length, 0)
         ).toFixed(1)
       : null;
 
   const getGrade = (id: string | number): StudentGrades =>
     grades[id] ?? { q1: "", q2: "", q3: "", q4: "" };
+
+  const getStatusLabel = (status?: string) => {
+    switch (status?.toLowerCase()) {
+      case "passed": return t("teacherModule.passed");
+      case "failed": return t("teacherModule.failed");
+      default: return t("teacherModule.pending");
+    }
+  };
 
   const setStudentGrade = (id: string | number, key: keyof StudentGrades, value: string) => {
     setGrades((prev) => ({
@@ -201,38 +215,16 @@ function GradeContent() {
     const q2 = g.q2 !== "" ? Number(g.q2) : undefined;
     const q3 = g.q3 !== "" ? Number(g.q3) : undefined;
     const q4 = g.q4 !== "" ? Number(g.q4) : undefined;
-    // Teacher grade = average of entered quarters
-    const entered = [q1, q2, q3, q4].filter((v) => v !== undefined) as number[];
-    const teacherGrade = entered.length > 0 ? Math.round(entered.reduce((a, b) => a + b, 0) / entered.length) : 0;
-
     try {
-      await teacherService.saveStudentGrade(classId, student.id, teacherGrade, {
-        q1, q2, q3, q4, subjectId: subjectId || undefined,
+      await teacherService.saveStudentGrade({
+        classId, studentId: student.id, subjectId, q1, q2, q3, q4,
       });
 
       setSavedIds((prev) => new Set([...prev, student.id]));
-      appToast.success(`Grades saved for ${student.name}`);
-
-      // Notify Vice Principal
-      teacherService.pushNotification({
-        type: "grade",
-        title: "Grades Updated",
-        message: `Teacher updated grades for ${student.name} in ${subject} (Class ${classId}).`,
-        priority: "medium",
-        targetRole: "Admin",
-      });
-
-      // Notify the student (conceptual — same notification system)
-      teacherService.pushNotification({
-        type: "grade",
-        title: "Your grades have been updated",
-        message: `Your ${subject} grades have been entered by your teacher.`,
-        priority: "high",
-        targetRole: "Student",
-      });
+      appToast.success(t("teacherModule.gradesSavedFor", `Grades saved for ${student.name}`).replace("{name}", student.name));
 
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : "Failed to save grade");
+      appToast.error(err instanceof Error ? err.message : t("teacherModule.failedSaveGrade"));
     } finally {
       setSavingId(null);
     }
@@ -241,18 +233,20 @@ function GradeContent() {
   // Save ALL students at once
   const handleSaveAll = async () => {
     setBulkSaving(true);
+    const studentsToSave = filtered.filter((student) => {
+      const grade = getGrade(student.id);
+      return grade.q1 !== "" || grade.q2 !== "" || grade.q3 !== "" || grade.q4 !== "";
+    });
     let successCount = 0;
-    for (const student of filtered) {
+    for (const student of studentsToSave) {
       const g = getGrade(student.id);
       const q1 = g.q1 !== "" ? Number(g.q1) : undefined;
       const q2 = g.q2 !== "" ? Number(g.q2) : undefined;
       const q3 = g.q3 !== "" ? Number(g.q3) : undefined;
       const q4 = g.q4 !== "" ? Number(g.q4) : undefined;
-      const entered = [q1, q2, q3, q4].filter((v) => v !== undefined) as number[];
-      const teacherGrade = entered.length > 0 ? Math.round(entered.reduce((a, b) => a + b, 0) / entered.length) : 0;
       try {
-        await teacherService.saveStudentGrade(classId, student.id, teacherGrade, {
-          q1, q2, q3, q4, subjectId: subjectId || undefined,
+        await teacherService.saveStudentGrade({
+          classId, studentId: student.id, subjectId, q1, q2, q3, q4,
         });
         setSavedIds((prev) => new Set([...prev, student.id]));
         successCount++;
@@ -262,19 +256,8 @@ function GradeContent() {
     }
 
     setBulkSaving(false);
-    appToast.success(`Saved grades for ${successCount}/${filtered.length} students`);
-
-    // One bulk notification to vice
-    if (successCount > 0) {
-      teacherService.pushNotification({
-        type: "grade",
-        title: "Bulk Grade Submission",
-        message: `Grades for ${successCount} students in ${subject} (Class ${classId}) have been submitted.`,
-        priority: "high",
-        targetRole: "Admin",
-      });
-    }
-    setSnackbar(`✅ ${successCount} students' grades saved successfully`);
+    appToast.success(t("teacherModule.gradesSavedCount", `Saved grades for ${successCount}/${studentsToSave.length} students`).replace("{count}", String(successCount)).replace("{total}", String(studentsToSave.length)));
+    setSnackbar(t("teacherModule.gradesSavedCount", `Saved grades for ${successCount}/${studentsToSave.length} students`).replace("{count}", String(successCount)).replace("{total}", String(studentsToSave.length)));
   };
 
   const backUrl = `/teacher/classes?year=${year}`;
@@ -297,15 +280,15 @@ function GradeContent() {
               onClick={() => router.push(backUrl)}
               sx={{ color: accentColor, fontWeight: 600, textTransform: "none", "&:hover": { bgcolor: alpha(accentColor, 0.08) } }}
             >
-              Back to Classes
+              {t("teacherModule.backToClasses")}
             </Button>
             <Box sx={{ flex: 1 }} />
             <Chip
-              label={year.charAt(0).toUpperCase() + year.slice(1)}
+              label={year}
               sx={{ bgcolor: alpha(accentColor, 0.12), color: accentColor, fontWeight: 700, border: `1px solid ${alpha(accentColor, 0.3)}` }}
             />
             <Chip label={subject} variant="outlined" />
-            <Chip label={`Class ${classId}`} variant="outlined" />
+            <Chip label={`${t("teacherModule.class")} ${classId}`} variant="outlined" />
           </Box>
 
           <Typography
@@ -318,10 +301,10 @@ function GradeContent() {
               WebkitTextFillColor: "transparent",
             }}
           >
-            Grade Students
+            {t("teacherModule.gradeStudents")}
           </Typography>
           <Typography color="text.secondary" sx={{ mb: 4 }}>
-            Enter quarter grades for each student. Grades are automatically sent to the Vice Principal.
+            {t("teacherModule.gradeStudentsDescription")}
           </Typography>
         </motion.div>
 
@@ -330,10 +313,10 @@ function GradeContent() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "1fr 1fr 1fr 1fr" }, gap: 2, mb: 4 }}>
               {[
-                { label: "Total Students", value: students.length, icon: <PeopleIcon />, color: accentColor },
-                { label: "Passed", value: passCount, icon: <CheckCircleIcon />, color: "#4CAF50" },
-                { label: "Failed", value: failCount, icon: <EmojiEventsIcon />, color: "#F44336" },
-                { label: "Class Avg", value: avgGrade ?? "—", icon: <NotificationsActiveIcon />, color: "#FF9800" },
+                { label: t("teacherModule.totalStudents"), value: students.length, icon: <PeopleIcon />, color: accentColor },
+                { label: t("teacherModule.withGrades"), value: enteredCount, icon: <CheckCircleIcon />, color: "#4CAF50" },
+                { label: t("teacherModule.pending"), value: pendingCount, icon: <EmojiEventsIcon />, color: "#F44336" },
+                { label: t("teacherModule.quarterAverage"), value: avgGrade ?? "—", icon: <AssessmentIcon />, color: "#FF9800" },
               ].map((stat) => (
                 <Box
                   key={stat.label}
@@ -368,7 +351,7 @@ function GradeContent() {
             <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap", alignItems: "center" }}>
               <TextField
                 size="small"
-                placeholder="Search student..."
+                placeholder={t("teacherModule.searchStudent")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -383,16 +366,19 @@ function GradeContent() {
               <Button
                 variant="outlined"
                 startIcon={<GetAppIcon />}
-                onClick={() => exportToExcel(students, subject, classId, year)}
+                onClick={() => exportToExcel(students, subject, classId, year, [t("teacherModule.studentName"), "Q1", "Q2", "Q3", "Q4", t("teacherModule.finalGrade"), t("teacherModule.status")])}
                 sx={{ fontWeight: 600, textTransform: "none", borderColor: accentColor, color: accentColor, "&:hover": { borderColor: accentColor, bgcolor: alpha(accentColor, 0.06) } }}
               >
-                Export Excel
+                {t("teacherModule.exportGrades")}
               </Button>
               <Button
                 variant="contained"
                 startIcon={bulkSaving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
                 onClick={handleSaveAll}
-                disabled={bulkSaving || filtered.length === 0}
+                disabled={bulkSaving || filtered.every((student) => {
+                  const grade = getGrade(student.id);
+                  return grade.q1 === "" && grade.q2 === "" && grade.q3 === "" && grade.q4 === "";
+                })}
                 sx={{
                   fontWeight: 700,
                   textTransform: "none",
@@ -401,7 +387,7 @@ function GradeContent() {
                   "&:hover": { filter: "brightness(0.9)" },
                 }}
               >
-                {bulkSaving ? "Saving All..." : `Save All (${filtered.length})`}
+                {bulkSaving ? t("teacherModule.savingAll") : `${t("teacherModule.saveAll")} (${filtered.length})`}
               </Button>
             </Box>
           </motion.div>
@@ -422,7 +408,7 @@ function GradeContent() {
         {/* Empty */}
         {!loading && !error && filtered.length === 0 && (
           <Alert severity="info" sx={{ borderRadius: 2 }}>
-            {students.length === 0 ? "No students in this class." : "No students match your search."}
+            {students.length === 0 ? t("teacherModule.noStudents") : t("teacherModule.noSearchResults")}
           </Alert>
         )}
 
@@ -440,10 +426,10 @@ function GradeContent() {
               <Table>
                 <TableHead>
                   <TableRow sx={{ background: `linear-gradient(90deg, ${alpha(accentColor, 0.15)}, ${alpha(accentColor, 0.05)})` }}>
-                    {["#", "Student Name", "Q1", "Q2", "Q3", "Q4", "Teacher Grade", "Final Grade", "Status", "Action"].map((h) => (
+                    {["#", t("teacherModule.studentName"), "Q1", "Q2", "Q3", "Q4", t("teacherModule.quarterAverage"), t("teacherModule.finalGrade"), t("teacherModule.status"), t("teacherModule.action")].map((h) => (
                       <TableCell
                         key={h}
-                        align={h === "Student Name" || h === "#" ? "left" : "center"}
+                        align={h === t("teacherModule.studentName") || h === "#" ? (dir === "rtl" ? "right" : "left") : "center"}
                         sx={{ fontWeight: 800, fontSize: "0.82rem", color: theme.palette.text.primary, py: 2, whiteSpace: "nowrap" }}
                       >
                         {h}
@@ -505,12 +491,13 @@ function GradeContent() {
                               value={g[q]}
                               onChange={(v) => setStudentGrade(student.id, q, v)}
                               accentColor={accentColor}
+                              max={student[`max${q.toUpperCase()}` as "maxQ1" | "maxQ2" | "maxQ3" | "maxQ4"]}
                             />
                           </TableCell>
                         ))}
                         <TableCell align="center" sx={{ py: 1.5 }}>
                           <Typography fontWeight={700} color={accentColor}>
-                            {computedTeacherGrade ?? (student.teacherGrade ?? "—")}
+                            {computedTeacherGrade ?? "—"}
                           </Typography>
                         </TableCell>
                         <TableCell align="center" sx={{ py: 1.5 }}>
@@ -521,18 +508,18 @@ function GradeContent() {
                         <TableCell align="center" sx={{ py: 1.5 }}>
                           {student.status ? (
                             <Chip
-                              label={student.status.toUpperCase()}
+                              label={getStatusLabel(student.status)}
                               size="small"
                               sx={{
-                                bgcolor: student.status === "pass" ? alpha("#4CAF50", 0.12) : alpha("#F44336", 0.12),
-                                color: student.status === "pass" ? "#4CAF50" : "#F44336",
-                                border: `1px solid ${student.status === "pass" ? alpha("#4CAF50", 0.3) : alpha("#F44336", 0.3)}`,
+                                bgcolor: student.status.toLowerCase() === "passed" ? alpha("#4CAF50", 0.12) : alpha(accentColor, 0.12),
+                                color: student.status.toLowerCase() === "passed" ? "#4CAF50" : accentColor,
+                                border: `1px solid ${student.status.toLowerCase() === "passed" ? alpha("#4CAF50", 0.3) : alpha(accentColor, 0.3)}`,
                                 fontWeight: 700,
                                 fontSize: "0.7rem",
                               }}
                             />
                           ) : (
-                            <Typography variant="caption" color="text.disabled">Pending</Typography>
+                            <Typography variant="caption" color="text.disabled">{t("teacherModule.pending")}</Typography>
                           )}
                         </TableCell>
                         <TableCell align="center" sx={{ py: 1.5 }}>
@@ -557,7 +544,7 @@ function GradeContent() {
                                   }),
                             }}
                           >
-                            {isSaving ? "..." : isSaved ? "Saved" : "Save"}
+                            {isSaving ? "..." : isSaved ? t("teacherModule.saved") : t("teacherModule.save")}
                           </Button>
                         </TableCell>
                       </motion.tr>

@@ -1,7 +1,7 @@
 import { CardData } from "@/types/SharedCard";
-import JuniorIcon from "@/icons/1.svg";
-import WheelerIcon from "@/icons/2.svg";
-import SeniorIcon from "@/icons/3.svg";
+import Looks3Icon from "@mui/icons-material/Looks3";
+import LooksOneIcon from "@mui/icons-material/LooksOne";
+import LooksTwoIcon from "@mui/icons-material/LooksTwo";
 import { TeacherSubject } from "@/types/Teacher-api/teacher-api";
 
 export function mapTeacherCardsToSharedCards(
@@ -14,11 +14,11 @@ export function mapTeacherCardsToSharedCards(
     href: item.route || `/teacher/classes?year=${item.year}`,
     icon:
       item.year === "junior"
-        ? JuniorIcon
+        ? LooksOneIcon
         : item.year === "wheeler"
-          ? WheelerIcon
+          ? LooksTwoIcon
           : item.year === "senior"
-            ? SeniorIcon
-            : JuniorIcon,
+            ? Looks3Icon
+            : LooksOneIcon,
   }));
 }
