@@ -1,13 +1,6 @@
 
-"use client";
-
-import { useLanguage } from "@/context/LanguageContext";
+import { redirect } from "next/navigation";
 
 export default function AdminPage() {
-    const { t } = useLanguage();
-    return (
-        <div>
-            <h1>{t("dashboards.admin")}</h1>
-        </div>
-    );
+    redirect("/vice/grades");
 }

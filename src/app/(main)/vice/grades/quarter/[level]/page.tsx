@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-    Box, Container, Typography, Stack, Card, alpha, Chip, Skeleton,
+    Alert, Box, Container, Typography, Stack, Card, alpha, Chip, Skeleton,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
@@ -51,17 +51,6 @@ const LEVEL_META: Record<string, { color: string; emoji: string }> = {
     senior:  { color: '#8B5CF6', emoji: '🎓' },
 };
 
-const FALLBACK_SUBJECTS: SubjectItem[] = [
-    { id: 'arabic',        name: 'Arabic',        gradeType: 'academic' },
-    { id: 'english',       name: 'English',       gradeType: 'academic' },
-    { id: 'math',          name: 'Math',          gradeType: 'academic' },
-    { id: 'social-studies',name: 'Social Studies',gradeType: 'academic' },
-    { id: 'physics',       name: 'Physics',       gradeType: 'academic' },
-    { id: 'mechanics',     name: 'Mechanics',     gradeType: 'academic' },
-    { id: 'religion',      name: 'Religion',      gradeType: 'academic' },
-    { id: 'other',         name: 'Other',         gradeType: 'competency' },
-];
-
 export default function SubjectSelectionPage() {
     const theme = useTheme();
     const params = useParams();
@@ -70,6 +59,7 @@ export default function SubjectSelectionPage() {
 
     const [subjects, setSubjects] = useState<SubjectItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const API = API_BASE_URL;
 
@@ -77,20 +67,17 @@ export default function SubjectSelectionPage() {
         secureFetch(`${API}/Subjects?year=${encodeURIComponent(level)}`)
             .then((data) => {
                 const list = getApiList(data);
-                
-                if (list.length > 0) {
-                    setSubjects(list.map((s) => ({
-                        id: String(s.id ?? s.subjectId),
-                        name: typeof (s.subjectName ?? s.name) === 'string' ? (s.subjectName ?? s.name) as string : 'Unknown',
-                        gradeType: typeof s.subjectName === 'string' && s.subjectName.toLowerCase().includes('jadarat') ? 'competency' : 'academic'
-                    })));
-                } else {
-                    setSubjects(FALLBACK_SUBJECTS);
-                }
+                setError(null);
+                setSubjects(list.map<SubjectItem>((s) => ({
+                    id: String(s.id ?? s.subjectId),
+                    name: typeof (s.subjectName ?? s.name) === 'string' ? (s.subjectName ?? s.name) as string : 'Unknown',
+                    gradeType: typeof s.subjectName === 'string' && s.subjectName.toLowerCase().includes('jadarat') ? 'competency' : 'academic'
+                })).filter((subject) => /^\d+$/.test(subject.id)));
             })
             .catch((error) => {
                 console.error("Failed to fetch subjects:", error);
-                setSubjects(FALLBACK_SUBJECTS);
+                setSubjects([]);
+                setError(error instanceof Error ? error.message : 'Subjects could not be loaded.');
             })
             .finally(() => setLoading(false));
     }, [level, API]);
@@ -197,6 +184,10 @@ export default function SubjectSelectionPage() {
                     </Box>
 
                     {/* Subject Grid */}
+                    {!loading && error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+                    {!loading && !error && subjects.length === 0 && (
+                        <Alert severity="info" sx={{ mb: 3 }}>No database subjects are available for this level.</Alert>
+                    )}
                     <Box
                         component={motion.div}
                         variants={containerVariants}

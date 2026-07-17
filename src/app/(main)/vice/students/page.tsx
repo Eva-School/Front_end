@@ -115,7 +115,12 @@ export default function ViceStudentsPage() {
     setPoolError(null);
     setPoolLoading(true);
     try {
-      const data = await ViceStudentsAPI.list({ year: level, department, unassigned: true });
+      const data = await ViceStudentsAPI.list({
+        year: level,
+        department,
+        unassigned: true,
+        academicYearName: academicYear,
+      });
       setPoolStudents(data);
     } catch (e: unknown) {
       setPoolError(e instanceof Error ? e.message : t('students.failedLoadStudents', 'Failed to load students'));
@@ -124,7 +129,7 @@ export default function ViceStudentsPage() {
       setPoolLoading(false);
     }
     setSelectedStudentIds(new Set());
-  }, [level, department, t]);
+  }, [academicYear, level, department, t]);
 
   useEffect(() => {
     loadClasses();
@@ -133,7 +138,7 @@ export default function ViceStudentsPage() {
 
   useEffect(() => {
     loadPoolStudents();
-  }, [level, department, loadPoolStudents]);
+  }, [academicYear, level, department, loadPoolStudents]);
 
   /* ── Create Class ── */
   const handleCreateClass = async () => {

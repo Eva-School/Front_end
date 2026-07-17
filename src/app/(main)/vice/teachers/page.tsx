@@ -170,15 +170,21 @@ export default function ViceTeachersPage() {
             setSelectedSubjectId("");
             return;
         }
+        const editingSubjectId = editingAssignment?.yearName === selectedYear && editingAssignment.stage === selectedLevel
+            ? String(editingAssignment.subjectId)
+            : "";
         // A subject ID is only valid within its own academic-year and level.
         setSubjects([]);
-        setSelectedSubjectId("");
+        if (!editingSubjectId) setSelectedSubjectId("");
         setIsLoadingSubjects(true);
         let requestIsCurrent = true;
         SubjectsAPI.getByYear(selectedYear, selectedLevel)
             .then((data) => {
                 if (!requestIsCurrent) return;
                 setSubjects(data);
+                if (editingSubjectId) {
+                    setSelectedSubjectId(data.some((subject) => String(subject.id) === editingSubjectId) ? editingSubjectId : "");
+                }
                 setIsLoadingSubjects(false);
             })
             .catch((error) => {
@@ -194,7 +200,7 @@ export default function ViceTeachersPage() {
         return () => {
             requestIsCurrent = false;
         };
-    }, [selectedYear, selectedLevel, t]);
+    }, [selectedYear, selectedLevel, editingAssignment, t]);
 
     useEffect(() => {
         if (!selectedYear || !selectedLevel) {
@@ -238,7 +244,7 @@ export default function ViceTeachersPage() {
 
     const handleAssignTeacher = async () => {
         // Validation
-        if (!selectedTeacherId || !selectedYear || !selectedSubjectId || selectedClassIds.length === 0) {
+        if (!selectedTeacherId || !selectedYear || !selectedLevel || !selectedSubjectId || selectedClassIds.length === 0) {
             setAssignmentError(t("teachers.fillRequiredFields", "Please fill in all required fields"));
             return;
         }
@@ -265,6 +271,7 @@ export default function ViceTeachersPage() {
             const assignmentPayload = {
                 teacherId: String(teacherIdToAssign).trim(),
                 yearId: String(selectedYear).trim(),
+                stage: selectedLevel as "junior" | "wheeler" | "senior",
                 subjectId: String(selectedSubjectId).trim(),
                 classIds: normalizedClassIds,
             };

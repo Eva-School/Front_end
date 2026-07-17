@@ -13,6 +13,7 @@ import RemoveIcon       from "@mui/icons-material/Remove";
 import SearchIcon       from "@mui/icons-material/Search";
 import SchoolIcon       from "@mui/icons-material/School";
 import { API_BASE_URL, secureFetch } from "@/config/api.config";
+import { AcademicYearsAPI, AcademicYearOption } from "@/data/academic-years.api";
 
 interface StudentRanking {
   rank: number;
@@ -252,10 +253,22 @@ export default function RankingsPage() {
 
   const [rankings, setRankings] = useState<StudentRanking[]>([]);
   const [loading,  setLoading]  = useState(true);
-  const [year,     setYear]     = useState("2024-2025");
+  const [year,     setYear]     = useState("");
+  const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
   const [search,   setSearch]   = useState("");
 
   useEffect(() => {
+    AcademicYearsAPI.list()
+      .then((years) => {
+        setAcademicYears(years);
+        setYear(years.find((item) => item.isActive)?.yearName ?? years[0]?.yearName ?? "");
+        if (years.length === 0) setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!year) return;
     secureFetch<{ rankings?: StudentRanking[] }>(`${API_BASE_URL}/rankings?year=${encodeURIComponent(year)}&limit=20`)
       .then((d) => setRankings(d.rankings ?? []))
       .catch(() => setRankings([]))
@@ -304,8 +317,9 @@ export default function RankingsPage() {
               setYear(e.target.value);
             }}
           >
-            <MenuItem value="2024-2025">2024 – 2025</MenuItem>
-            <MenuItem value="2025-2026">2025 – 2026</MenuItem>
+            {academicYears.map((item) => (
+              <MenuItem key={item.yearName} value={item.yearName}>{item.yearName.replace("-", " – ")}</MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Box>

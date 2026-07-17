@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { Box, CircularProgress, Typography, Button } from "@mui/material";
-import { authService, MeResponse } from "@/services/auth.service";
+import { MeResponse } from "@/services/auth.service";
+import { useAuth } from "@/context/AuthContext";
 import { useTranslations } from "next-intl";
 
 interface RoleGuardProps {
@@ -15,36 +16,10 @@ interface RoleGuardProps {
 export default function RoleGuard({ children, allowedRoles, fallbackRoute = "/login" }: RoleGuardProps) {
     const router = useRouter();
     const t = useTranslations();
-    const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+    const { user, loading } = useAuth();
+    const isAuthorized = user !== null && allowedRoles.includes(user.role);
 
-    useEffect(() => {
-        let isMounted = true;
-
-        const checkAuth = async () => {
-            try {
-                const user = await authService.getMe();
-                if (isMounted) {
-                    if (allowedRoles.includes(user.role)) {
-                        setIsAuthorized(true);
-                    } else {
-                        setIsAuthorized(false);
-                    }
-                }
-            } catch {
-                if (isMounted) {
-                    setIsAuthorized(false);
-                }
-            }
-        };
-
-        checkAuth();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [allowedRoles]);
-
-    if (isAuthorized === null) {
+    if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
                 <CircularProgress />

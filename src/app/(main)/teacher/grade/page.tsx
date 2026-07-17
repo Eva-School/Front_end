@@ -220,6 +220,9 @@ function GradeContent() {
         classId, studentId: student.id, subjectId, q1, q2, q3, q4,
       });
 
+      setStudents((current) => current.map((item) => item.id === student.id
+        ? { ...item, q1, q2, q3, q4 }
+        : item));
       setSavedIds((prev) => new Set([...prev, student.id]));
       appToast.success(t("teacherModule.gradesSavedFor", `Grades saved for ${student.name}`).replace("{name}", student.name));
 
@@ -238,6 +241,7 @@ function GradeContent() {
       return grade.q1 !== "" || grade.q2 !== "" || grade.q3 !== "" || grade.q4 !== "";
     });
     let successCount = 0;
+    const failedStudents: string[] = [];
     for (const student of studentsToSave) {
       const g = getGrade(student.id);
       const q1 = g.q1 !== "" ? Number(g.q1) : undefined;
@@ -249,15 +253,25 @@ function GradeContent() {
           classId, studentId: student.id, subjectId, q1, q2, q3, q4,
         });
         setSavedIds((prev) => new Set([...prev, student.id]));
+        setStudents((current) => current.map((item) => item.id === student.id
+          ? { ...item, q1, q2, q3, q4 }
+          : item));
         successCount++;
       } catch {
-        // continue with next
+        failedStudents.push(student.name);
       }
     }
 
     setBulkSaving(false);
-    appToast.success(t("teacherModule.gradesSavedCount", `Saved grades for ${successCount}/${studentsToSave.length} students`).replace("{count}", String(successCount)).replace("{total}", String(studentsToSave.length)));
-    setSnackbar(t("teacherModule.gradesSavedCount", `Saved grades for ${successCount}/${studentsToSave.length} students`).replace("{count}", String(successCount)).replace("{total}", String(studentsToSave.length)));
+    const summary = t("teacherModule.gradesSavedCount", `Saved grades for ${successCount}/${studentsToSave.length} students`).replace("{count}", String(successCount)).replace("{total}", String(studentsToSave.length));
+    if (failedStudents.length > 0) {
+      appToast.error(`${summary}. ${t("teacherModule.failedStudents", "Failed")}: ${failedStudents.join(", ")}`);
+    } else if (successCount > 0) {
+      appToast.success(summary);
+    } else {
+      appToast.info(t("teacherModule.noGradesToSave", "No entered grades were available to save."));
+    }
+    setSnackbar(summary);
   };
 
   const backUrl = `/teacher/classes?year=${year}`;

@@ -46,59 +46,6 @@ export interface RefreshTokenResponse {
     refreshToken?: string; // Optional - some APIs only return new access token
 }
 
-interface JwtPayload {
-    [key: string]: unknown;
-}
-
-function decodeJwtPayload(token: string): JwtPayload | null {
-    try {
-        const payload = token.split(".")[1];
-        if (!payload) return null;
-        const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-        const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-        const decoded = atob(padded);
-        return JSON.parse(decoded);
-    } catch {
-        return null;
-    }
-}
-
-function getClaimString(payload: JwtPayload | null, key: string): string | null {
-    const value = payload?.[key];
-    return typeof value === "string" ? value : null;
-}
-
-function parseUserFromToken(accessToken: string): MeResponse | null {
-    const payload = decodeJwtPayload(accessToken);
-    if (!payload) return null;
-
-    const userIdRaw = getClaimString(
-        payload,
-        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-    );
-    const username =
-        getClaimString(payload, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name") ?? "User";
-    const roleRaw =
-        getClaimString(payload, "http://schemas.microsoft.com/ws/2008/06/identity/claims/role") ?? "Student";
-
-    const normalizedRole =
-        roleRaw === "Student Affairs" || roleRaw === "StudentAffairs" ? "StudentAffairs" : roleRaw;
-
-    const role = (normalizedRole === "Admin" ||
-        normalizedRole === "Teacher" ||
-        normalizedRole === "Student" ||
-        normalizedRole === "StudentAffairs"
-        ? normalizedRole
-        : "Student") as MeResponse["role"];
-    const userId = Number(userIdRaw ?? "0");
-
-    return {
-        userId: Number.isFinite(userId) ? userId : 0,
-        role,
-        username,
-    };
-}
-
 /**
  * Login and store tokens
  */
@@ -193,10 +140,7 @@ async function getMe(): Promise<MeResponse> {
                 tokenStorage.clearAll();
             }
         }
-        const fallbackUser = parseUserFromToken(accessToken);
-        if (fallbackUser) {
-            return fallbackUser;
-        }
+        tokenStorage.clearAll();
         throw new Error("Unauthenticated");
     }
 
@@ -287,5 +231,4 @@ export const authService = {
     getMe,
     logout,
     refreshAccessToken,
-    parseUserFromToken,
 };

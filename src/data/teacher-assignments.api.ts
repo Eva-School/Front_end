@@ -3,6 +3,7 @@ import { API_BASE_URL, secureFetch } from "@/config/api.config";
 export interface CreateTeacherAssignmentPayload {
   teacherId: string;
   yearId: string;
+  stage: "junior" | "wheeler" | "senior";
   subjectId: string;
   classIds: number[];
 }

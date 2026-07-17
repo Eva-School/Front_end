@@ -30,6 +30,7 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import SchoolIcon from "@mui/icons-material/School";
 import { API_BASE_URL, secureFetch } from "@/config/api.config";
+import { AcademicYearsAPI, AcademicYearOption } from "@/data/academic-years.api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface SubjectStat {
@@ -335,12 +336,27 @@ export default function AnalyticsDashboard() {
   const theme = useTheme();
   const primary = theme.palette.primary.main;
 
-  const [year, setYear] = useState("2024-2025");
+  const [year, setYear] = useState("");
+  const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    AcademicYearsAPI.list()
+      .then((years) => {
+        setAcademicYears(years);
+        setYear(years.find((item) => item.isActive)?.yearName ?? years[0]?.yearName ?? "");
+        if (years.length === 0) setLoading(false);
+      })
+      .catch((requestError: unknown) => {
+        setError(requestError instanceof Error ? requestError.message : "Academic years could not be loaded.");
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!year) return;
     secureFetch<AnalyticsData>(`${API_BASE_URL}/analytics/overview?year=${encodeURIComponent(year)}`)
       .then((json) => {
         setData(json);
@@ -413,8 +429,9 @@ export default function AnalyticsDashboard() {
                 setYear(e.target.value);
               }}
             >
-              <MenuItem value="2024-2025">2024 – 2025</MenuItem>
-              <MenuItem value="2025-2026">2025 – 2026</MenuItem>
+              {academicYears.map((item) => (
+                <MenuItem key={item.yearName} value={item.yearName}>{item.yearName.replace("-", " – ")}</MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
