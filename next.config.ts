@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+// Initialize OpenNext adapter in development mode
+if (process.env.NODE_ENV === "development") {
+  initOpenNextCloudflareForDev();
+}
 
 const backendApiUrl = process.env.BACKEND_API_URL
   ?? (process.env.NODE_ENV === "development" ? "http://localhost:5080/api" : "");
