@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const backendApiUrl = (process.env.BACKEND_API_URL ?? "https://evaschool.runasp.net/api").replace(/\/+$/, "");
+const backendApiUrl = (process.env.BACKEND_API_URL ?? "http://localhost:5080/api").replace(/\/+$/, "");
 
 function getToken(request: Request): string | null {
   const authorization = request.headers.get("authorization");

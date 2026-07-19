@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = request.nextUrl;
   const year       = searchParams.get("year")      ?? "2024-2025";
-  const API = (process.env.BACKEND_API_URL ?? "https://evaschool.runasp.net/api").replace(/\/+$/, "");
+  const API = (process.env.BACKEND_API_URL ?? "http://localhost:5080/api").replace(/\/+$/, "");
 
   try {
     const response = await fetch(`${API}/student/report?year=${encodeURIComponent(year)}`, {

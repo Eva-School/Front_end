@@ -31,6 +31,7 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import SchoolIcon from "@mui/icons-material/School";
 import { API_BASE_URL, secureFetch } from "@/config/api.config";
 import { AcademicYearsAPI, AcademicYearOption } from "@/data/academic-years.api";
+import { useLanguage } from "@/context/LanguageContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface SubjectStat {
@@ -64,7 +65,7 @@ interface AnalyticsData {
 // ─── Bar Chart ─────────────────────────────────────────────────────────────────
 function BarChart({ data }: { data: { label: string; value: number; color: string }[] }) {
   const theme = useTheme();
-  const max = Math.max(...data.map((d) => d.value));
+  const max = Math.max(...data.map((d) => d.value), 1);
 
   return (
     <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-end", height: 160, px: 1 }}>
@@ -103,7 +104,7 @@ function BarChart({ data }: { data: { label: string; value: number; color: strin
 }
 
 // ─── Line Chart ───────────────────────────────────────────────────────────────
-function LineChart({ data }: { data: { month: string; average: number }[] }) {
+function LineChart({ data, noDataText }: { data: { month: string; average: number }[]; noDataText: string }) {
   const theme = useTheme();
   const primary = theme.palette.primary.main;
   const W = 400;
@@ -112,8 +113,6 @@ function LineChart({ data }: { data: { month: string; average: number }[] }) {
   const chartW = W - padding.left - padding.right;
   const chartH = H - padding.top - padding.bottom;
 
-  // A newly created academic year can have no recorded trend yet. Do not
-  // construct SVG paths from missing points in that valid empty state.
   const validData = data.filter(
     (item) => typeof item.month === "string" && Number.isFinite(item.average),
   );
@@ -129,7 +128,7 @@ function LineChart({ data }: { data: { month: string; average: number }[] }) {
           color: theme.palette.text.secondary,
         }}
       >
-        <Typography variant="body2">No grade trend data is available yet.</Typography>
+        <Typography variant="body2">{noDataText}</Typography>
       </Box>
     );
   }
@@ -142,7 +141,7 @@ function LineChart({ data }: { data: { month: string; average: number }[] }) {
       validData.length === 1
         ? padding.left + chartW / 2
         : padding.left + (i / (validData.length - 1)) * chartW,
-    y: padding.top + chartH - ((d.average - min) / (max - min)) * chartH,
+    y: padding.top + chartH - ((d.average - min) / Math.max(max - min, 1)) * chartH,
     ...d,
   }));
 
@@ -210,7 +209,7 @@ function LineChart({ data }: { data: { month: string; average: number }[] }) {
           <text
             key={i}
             x={padding.left - 4}
-            y={padding.top + chartH - ((v - min) / (max - min)) * chartH + 4}
+            y={padding.top + chartH - ((v - min) / Math.max(max - min, 1)) * chartH + 4}
             textAnchor="end"
             fontSize="8"
             fill={theme.palette.mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.35)"}
@@ -226,13 +225,13 @@ function LineChart({ data }: { data: { month: string; average: number }[] }) {
 // ─── Donut-style Grade Distribution ──────────────────────────────────────────
 function GradeDistributionChart({ data }: { data: { label: string; count: number; color: string }[] }) {
   const theme = useTheme();
-  const total = data.reduce((s, d) => s + d.count, 0);
+  const total = Math.max(data.reduce((s, d) => s + d.count, 0), 1);
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
       {data.map((d, i) => (
         <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: d.color, flexShrink: 0 }} />
-          <Typography variant="caption" sx={{ width: 80, color: theme.palette.text.secondary, fontSize: "0.72rem" }}>
+          <Typography variant="caption" sx={{ minWidth: 90, color: theme.palette.text.secondary, fontSize: "0.72rem" }}>
             {d.label}
           </Typography>
           <Box sx={{ flex: 1 }}>
@@ -335,6 +334,7 @@ function KPICard({
 export default function AnalyticsDashboard() {
   const theme = useTheme();
   const primary = theme.palette.primary.main;
+  const { t } = useLanguage();
 
   const [year, setYear] = useState("");
   const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
@@ -350,10 +350,10 @@ export default function AnalyticsDashboard() {
         if (years.length === 0) setLoading(false);
       })
       .catch((requestError: unknown) => {
-        setError(requestError instanceof Error ? requestError.message : "Academic years could not be loaded.");
+        setError(requestError instanceof Error ? requestError.message : t("analyticsPage.loadingYearsError", "Academic years could not be loaded."));
         setLoading(false);
       });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!year) return;
@@ -364,10 +364,10 @@ export default function AnalyticsDashboard() {
       })
       .catch((requestError: unknown) => {
         setData(null);
-        setError(requestError instanceof Error ? requestError.message : "Analytics data could not be loaded.");
+        setError(requestError instanceof Error ? requestError.message : t("analyticsPage.loadingDataError", "Analytics data could not be loaded."));
       })
       .finally(() => setLoading(false));
-  }, [year]);
+  }, [year, t]);
 
   const subjectBarData = (data?.subjectStats ?? []).map((s) => ({
     label: s.subject.slice(0, 4),
@@ -405,25 +405,25 @@ export default function AnalyticsDashboard() {
           </Box>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 800, color: theme.palette.text.primary }}>
-              Analytics Dashboard
+              {t("analyticsPage.title", "Analytics Dashboard")}
             </Typography>
             <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-              Academic performance overview
+              {t("analyticsPage.subtitle", "Academic performance overview")}
             </Typography>
           </Box>
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Chip
-            label="● Live Data"
+            label={`● ${t("analyticsPage.liveData", "Live Data")}`}
             size="small"
             sx={{ bgcolor: alpha("#4CAF50", 0.12), color: "#4CAF50", fontWeight: 700 }}
           />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Academic Year</InputLabel>
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>{t("analyticsPage.academicYear", "Academic Year")}</InputLabel>
             <Select
               value={year}
-              label="Academic Year"
+              label={t("analyticsPage.academicYear", "Academic Year")}
               onChange={(e) => {
                 setLoading(true);
                 setYear(e.target.value);
@@ -444,10 +444,10 @@ export default function AnalyticsDashboard() {
       ) : !data ? (
         <Box sx={{ py: 10, textAlign: "center" }}>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-            Analytics are unavailable
+            {t("analyticsPage.unavailableTitle", "Analytics are unavailable")}
           </Typography>
           <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-            {error ?? "No analytics data is available for this academic year."}
+            {error ?? t("analyticsPage.unavailableMessage", "No analytics data is available for this academic year.")}
           </Typography>
         </Box>
       ) : (
@@ -463,30 +463,30 @@ export default function AnalyticsDashboard() {
           >
             <KPICard
               icon={<PeopleIcon />}
-              value={String(data!.totalStudents)}
-              label="Total Students"
-              sub="Enrolled this year"
+              value={String(data.totalStudents)}
+              label={t("analyticsPage.totalStudents", "Total Students")}
+              sub={t("analyticsPage.totalStudentsSub", "Enrolled this year")}
               color="#2196F3"
             />
             <KPICard
               icon={<TrendingUpIcon />}
-              value={`${data!.averageGrade}%`}
-              label="School Average"
-              sub="All subjects combined"
+              value={`${data.averageGrade}%`}
+              label={t("analyticsPage.schoolAverage", "School Average")}
+              sub={t("analyticsPage.schoolAverageSub", "All subjects combined")}
               color={primary}
             />
             <KPICard
               icon={<AssignmentIcon />}
-              value={`${data!.passRate}%`}
-              label="Pass Rate"
-              sub="Grade 60 and above"
+              value={`${data.passRate}%`}
+              label={t("analyticsPage.passRate", "Pass Rate")}
+              sub={t("analyticsPage.passRateSub", "Grade 60 and above")}
               color="#4CAF50"
             />
             <KPICard
               icon={<EmojiEventsIcon />}
-              value={String(data!.topPerformers)}
-              label="Top Performers"
-              sub="Grade 90 and above"
+              value={String(data.topPerformers)}
+              label={t("analyticsPage.topPerformers", "Top Performers")}
+              sub={t("analyticsPage.topPerformersSub", "Grade 90 and above")}
               color="#E91E63"
             />
           </Box>
@@ -510,10 +510,10 @@ export default function AnalyticsDashboard() {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: theme.palette.text.primary }}>
-                Subject Averages
+                {t("analyticsPage.subjectAverages", "Subject Averages")}
               </Typography>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: "block", mb: 2 }}>
-                Average grade per subject
+                {t("analyticsPage.subjectAveragesSub", "Average grade per subject")}
               </Typography>
               <BarChart data={subjectBarData} />
             </Box>
@@ -528,12 +528,15 @@ export default function AnalyticsDashboard() {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: theme.palette.text.primary }}>
-                Grade Trend
+                {t("analyticsPage.gradeTrend", "Grade Trend")}
               </Typography>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: "block", mb: 2 }}>
-                Monthly average progression
+                {t("analyticsPage.gradeTrendSub", "Monthly average progression")}
               </Typography>
-              <LineChart data={data!.monthlyTrend} />
+              <LineChart
+                data={data.monthlyTrend}
+                noDataText={t("analyticsPage.noTrendData", "No grade trend data is available yet.")}
+              />
             </Box>
           </Box>
 
@@ -556,12 +559,12 @@ export default function AnalyticsDashboard() {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: theme.palette.text.primary }}>
-                Grade Distribution
+                {t("analyticsPage.gradeDistribution", "Grade Distribution")}
               </Typography>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: "block", mb: 2.5 }}>
-                Students by grade range
+                {t("analyticsPage.gradeDistributionSub", "Students by grade range")}
               </Typography>
-              <GradeDistributionChart data={data!.gradeDistribution} />
+              <GradeDistributionChart data={data.gradeDistribution} />
             </Box>
 
             {/* Subject Stats Table */}
@@ -574,18 +577,23 @@ export default function AnalyticsDashboard() {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: theme.palette.text.primary }}>
-                Subject Performance
+                {t("analyticsPage.subjectPerformance", "Subject Performance")}
               </Typography>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: "block", mb: 2 }}>
-                Detailed breakdown per subject
+                {t("analyticsPage.subjectPerformanceSub", "Detailed breakdown per subject")}
               </Typography>
               <TableContainer component={Paper} elevation={0} sx={{ bgcolor: "transparent" }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      {["Subject", "Avg", "High", "Pass %"].map((h) => (
+                      {[
+                        t("analyticsPage.colSubject", "Subject"),
+                        t("analyticsPage.colAvg", "Avg"),
+                        t("analyticsPage.colHigh", "High"),
+                        t("analyticsPage.colPassRate", "Pass %"),
+                      ].map((h, i) => (
                         <TableCell
-                          key={h}
+                          key={i}
                           sx={{
                             fontWeight: 700,
                             fontSize: "0.72rem",
@@ -600,7 +608,7 @@ export default function AnalyticsDashboard() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {data!.subjectStats.map((s, i) => (
+                    {data.subjectStats.map((s, i) => (
                       <TableRow key={i} sx={{ "&:hover": { bgcolor: alpha(s.color, 0.04) } }}>
                         <TableCell sx={{ py: 1, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.3)}` }}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -666,11 +674,11 @@ export default function AnalyticsDashboard() {
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.5 }}>
               <SchoolIcon sx={{ color: primary, fontSize: 22 }} />
               <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
-                Class Rankings
+                {t("analyticsPage.classRankings", "Class Rankings")}
               </Typography>
             </Box>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {data!.classRankings.map((c) => {
+              {data.classRankings.map((c) => {
                 const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32", "#9E9E9E", "#9E9E9E"];
                 const rankColor = rankColors[c.rank - 1] || "#9E9E9E";
                 return (
@@ -705,7 +713,7 @@ export default function AnalyticsDashboard() {
                         {c.className}
                       </Typography>
                       <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                        {c.students} students
+                        {t("analyticsPage.studentsCount", `${c.students} students`, { count: c.students })}
                       </Typography>
                     </Box>
                     <Box sx={{ textAlign: "right" }}>
@@ -719,7 +727,11 @@ export default function AnalyticsDashboard() {
                           fontWeight: 600,
                         }}
                       >
-                        {c.trend === "up" ? "▲ Rising" : c.trend === "down" ? "▼ Falling" : "● Stable"}
+                        {c.trend === "up"
+                          ? `▲ ${t("analyticsPage.rising", "Rising")}`
+                          : c.trend === "down"
+                          ? `▼ ${t("analyticsPage.falling", "Falling")}`
+                          : `● ${t("analyticsPage.stable", "Stable")}`}
                       </Typography>
                     </Box>
                     <Box sx={{ width: 100 }}>

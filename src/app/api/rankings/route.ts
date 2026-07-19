@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   const classId = searchParams.get("classId") ?? undefined;
   const limit   = parseInt(searchParams.get("limit") ?? "10");
 
-  const API = (process.env.BACKEND_API_URL ?? "https://evaschool.runasp.net/api").replace(/\/+$/, "");
+  const API = (process.env.BACKEND_API_URL ?? "http://localhost:5080/api").replace(/\/+$/, "");
 
   try {
     const params = new URLSearchParams({ year, limit: String(limit) });

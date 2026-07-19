@@ -76,15 +76,31 @@ async function getSubjectGroups(): Promise<ApiSubjectGroup[]> {
 }
 
 export async function getTeacherClassesGrouped(year: string): Promise<SubjectWithClasses[]> {
-  const group = (await getSubjectGroups()).find((item) => item.year === year);
-  if (!group) return [];
+  const groups = await getSubjectGroups();
+  const matchingGroups = groups.filter(
+    (item) => item.year === year || item.stage?.toLowerCase() === year.toLowerCase()
+  );
+  if (matchingGroups.length === 0) return [];
+
+  const subjectMap = new Map<number, { subjectId: number; subjectName: string; yearParam: string }>();
+  for (const group of matchingGroups) {
+    for (const sub of group.subjects) {
+      if (!subjectMap.has(sub.id)) {
+        subjectMap.set(sub.id, {
+          subjectId: sub.id,
+          subjectName: sub.subjectName,
+          yearParam: group.year || year,
+        });
+      }
+    }
+  }
 
   const assignments = await Promise.all(
-    group.subjects.map(async (subject) => {
-      const query = new URLSearchParams({ year, subject: String(subject.id) });
+    Array.from(subjectMap.values()).map(async (subject) => {
+      const query = new URLSearchParams({ year: subject.yearParam, subject: String(subject.subjectId) });
       const payload = await secureFetch(`${API_BASE_URL}/teacher/classes?${query.toString()}`);
       return {
-        subjectId: subject.id,
+        subjectId: subject.subjectId,
         subjectName: subject.subjectName,
         classes: Array.isArray(payload) ? (payload as ApiClass[]) : [],
       };

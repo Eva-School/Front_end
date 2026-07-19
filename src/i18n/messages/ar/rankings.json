@@ -1,0 +1,18 @@
+{
+  "rankingsPage": {
+    "title": "تصنيفات الطلاب",
+    "subtitle": "أفضل الطلاب أداءً في جميع الفصول الدراسية",
+    "year": "السنة الأكاديمية",
+    "topPerformersHeader": "أوائل الطلاب",
+    "searchPlaceholder": "البحث عن طالب أو فصل...",
+    "firstPlace": "🥇 المركز الأول",
+    "secondPlace": "🥈 المركز الثاني",
+    "thirdPlace": "🥉 المركز الثالث",
+    "statTotal": "الإجمالي: {count}",
+    "statHigh": "90%+ : {count}",
+    "statTrendingUp": "في تصاعد: {count}",
+    "gradesCount": "· {count} تقييمات",
+    "avgGrade": "متوسط الدرجة",
+    "noStudentsFound": "لم يتم العثور على طلاب"
+  }
+}

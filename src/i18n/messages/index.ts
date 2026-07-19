@@ -1,6 +1,7 @@
 import enA11y from "./en/a11y.json";
 import enAbout from "./en/about.json";
 import enAcademicYears from "./en/academicYears.json";
+import enAnalytics from "./en/analytics.json";
 import enAuth from "./en/auth.json";
 import enCommon from "./en/common.json";
 import enDashboards from "./en/dashboards.json";
@@ -9,6 +10,7 @@ import enHome from "./en/home.json";
 import enModal from "./en/modal.json";
 import enNotifications from "./en/notifications.json";
 import enQuarterEntry from "./en/quarterEntry.json";
+import enRankings from "./en/rankings.json";
 import enStudents from "./en/students.json";
 import enTeacherModule from "./en/teacherModule.json";
 import enTeachers from "./en/teachers.json";
@@ -18,6 +20,7 @@ import enViceGrades from "./en/viceGrades.json";
 import arA11y from "./ar/a11y.json";
 import arAbout from "./ar/about.json";
 import arAcademicYears from "./ar/academicYears.json";
+import arAnalytics from "./ar/analytics.json";
 import arAuth from "./ar/auth.json";
 import arCommon from "./ar/common.json";
 import arDashboards from "./ar/dashboards.json";
@@ -26,6 +29,7 @@ import arHome from "./ar/home.json";
 import arModal from "./ar/modal.json";
 import arNotifications from "./ar/notifications.json";
 import arQuarterEntry from "./ar/quarterEntry.json";
+import arRankings from "./ar/rankings.json";
 import arStudents from "./ar/students.json";
 import arTeacherModule from "./ar/teacherModule.json";
 import arTeachers from "./ar/teachers.json";
@@ -37,6 +41,7 @@ const en = {
   ...enA11y,
   ...enAbout,
   ...enAcademicYears,
+  ...enAnalytics,
   ...enAuth,
   ...enCommon,
   ...enDashboards,
@@ -45,6 +50,7 @@ const en = {
   ...enModal,
   ...enNotifications,
   ...enQuarterEntry,
+  ...enRankings,
   ...enStudents,
   ...enTeacherModule,
   ...enTeachers,
@@ -57,6 +63,7 @@ const ar: typeof en = {
   ...arA11y,
   ...arAbout,
   ...arAcademicYears,
+  ...arAnalytics,
   ...arAuth,
   ...arCommon,
   ...arDashboards,
@@ -65,6 +72,7 @@ const ar: typeof en = {
   ...arModal,
   ...arNotifications,
   ...arQuarterEntry,
+  ...arRankings,
   ...arStudents,
   ...arTeacherModule,
   ...arTeachers,

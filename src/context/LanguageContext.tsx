@@ -12,7 +12,11 @@ interface LanguageContextValue {
   dir: "ltr" | "rtl";
   setLanguage: (lang: AppLanguage) => void;
   toggleLanguage: () => void;
-  t: (key: string, fallback?: string) => string;
+  t: (
+    key: string,
+    fallbackOrValues?: string | Record<string, unknown>,
+    values?: Record<string, unknown>
+  ) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
@@ -37,9 +41,16 @@ function TranslationContextBridge({
     dir: language === "ar" ? "rtl" : "ltr",
     setLanguage,
     toggleLanguage,
-    // Compatibility bridge for existing components. New components should use
-    // next-intl's useTranslations(namespace) directly to benefit from typed keys.
-    t: (key, fallback) => translate.has(key as never) ? translate(key as never) : (fallback ?? key),
+    t: (key, fallbackOrValues, values) => {
+      if (typeof fallbackOrValues === "object" && fallbackOrValues !== null) {
+        return translate.has(key as never)
+          ? translate(key as never, fallbackOrValues as never)
+          : key;
+      }
+      const options = values ? (values as never) : undefined;
+      const fallback = typeof fallbackOrValues === "string" ? fallbackOrValues : undefined;
+      return translate.has(key as never) ? translate(key as never, options) : (fallback ?? key);
+    },
   }), [language, setLanguage, toggleLanguage, translate]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

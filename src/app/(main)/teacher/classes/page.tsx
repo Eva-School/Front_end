@@ -128,13 +128,14 @@ function ClassesContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const accentColor = LEVEL_COLORS[year] ?? "#FFC600";
-  const levelLabel = LEVEL_LABEL[year] ? t(`vice.${year}`, LEVEL_LABEL[year]) : year;
+  const stageKey = year.toLowerCase();
+  const accentColor = LEVEL_COLORS[stageKey] ?? "#FFC600";
+  const levelLabel = LEVEL_LABEL[stageKey] ? t(`vice.${stageKey}`, LEVEL_LABEL[stageKey]) : year;
 
   useEffect(() => {
     let cancelled = false;
-    queueMicrotask(() => setLoading(true));
-    queueMicrotask(() => setError(null));
+    setLoading(true);
+    setError(null);
 
     teacherService
       .getTeacherClassesGrouped(year)
@@ -201,7 +202,7 @@ function ClassesContent() {
             {t("teacherModule.yourClasses")}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 5 }}>
-            {t("teacherModule.selectClassDescription").replace("{year}", levelLabel)}
+            {t("teacherModule.selectClassDescription", { year: levelLabel })}
           </Typography>
         </motion.div>
 
@@ -225,7 +226,7 @@ function ClassesContent() {
             <GroupsIcon sx={{ fontSize: 64, color: alpha(theme.palette.text.secondary, 0.2), mb: 2 }} />
             <Typography variant="h6" color="text.secondary" fontWeight={600}>{t("teacherModule.noClassesAssigned")}</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              {t("teacherModule.noClassesAssignedDescription").replace("{year}", levelLabel)}
+              {t("teacherModule.noClassesAssignedDescription", { year: levelLabel })}
             </Typography>
           </Box>
         )}

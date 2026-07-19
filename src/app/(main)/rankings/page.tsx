@@ -14,6 +14,7 @@ import SearchIcon       from "@mui/icons-material/Search";
 import SchoolIcon       from "@mui/icons-material/School";
 import { API_BASE_URL, secureFetch } from "@/config/api.config";
 import { AcademicYearsAPI, AcademicYearOption } from "@/data/academic-years.api";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface StudentRanking {
   rank: number;
@@ -26,10 +27,10 @@ interface StudentRanking {
   badge?: "gold" | "silver" | "bronze";
 }
 
-const BADGE_CONFIG = {
-  gold:   { color: "#FFD700", bg: "#fffde7", label: "🥇 1st Place" },
-  silver: { color: "#C0C0C0", bg: "#f5f5f5", label: "🥈 2nd Place" },
-  bronze: { color: "#CD7F32", bg: "#fff3e0", label: "🥉 3rd Place" },
+const BADGE_COLORS = {
+  gold:   { color: "#FFD700", bg: "#fffde7" },
+  silver: { color: "#C0C0C0", bg: "#f5f5f5" },
+  bronze: { color: "#CD7F32", bg: "#fff3e0" },
 };
 
 const TREND_ICON = {
@@ -118,7 +119,16 @@ function Podium({ top3 }: { top3: StudentRanking[] }) {
 function RankRow({ student, index }: { student: StudentRanking; index: number }) {
   const theme   = useTheme();
   const primary = theme.palette.primary.main;
-  const badge   = student.badge ? BADGE_CONFIG[student.badge] : null;
+  const { t }   = useLanguage();
+  const badgeStyle = student.badge ? BADGE_COLORS[student.badge] : null;
+
+  const badgeLabel = student.badge === "gold"
+    ? t("rankingsPage.firstPlace", "🥇 1st Place")
+    : student.badge === "silver"
+    ? t("rankingsPage.secondPlace", "🥈 2nd Place")
+    : student.badge === "bronze"
+    ? t("rankingsPage.thirdPlace", "🥉 3rd Place")
+    : null;
 
   return (
     <Box
@@ -128,15 +138,15 @@ function RankRow({ student, index }: { student: StudentRanking; index: number })
         gap: 2,
         p: 2,
         borderRadius: 2.5,
-        bgcolor: badge
-          ? alpha(badge.color, 0.04)
+        bgcolor: badgeStyle
+          ? alpha(badgeStyle.color, 0.04)
           : index % 2 === 0
           ? alpha(theme.palette.background.paper, 0.6)
           : "transparent",
-        border: `1px solid ${badge ? alpha(badge.color, 0.2) : alpha(theme.palette.divider, 0.3)}`,
+        border: `1px solid ${badgeStyle ? alpha(badgeStyle.color, 0.2) : alpha(theme.palette.divider, 0.3)}`,
         transition: "all 0.2s ease",
         "&:hover": {
-          bgcolor: badge ? alpha(badge.color, 0.08) : alpha(primary, 0.04),
+          bgcolor: badgeStyle ? alpha(badgeStyle.color, 0.08) : alpha(primary, 0.04),
           transform: "translateX(4px)",
           boxShadow: `0 4px 16px ${alpha(theme.palette.common.black, 0.06)}`,
         },
@@ -148,7 +158,7 @@ function RankRow({ student, index }: { student: StudentRanking; index: number })
           width: 36,
           height: 36,
           borderRadius: 2,
-          bgcolor: badge ? alpha(badge.color, 0.15) : alpha(theme.palette.text.secondary, 0.08),
+          bgcolor: badgeStyle ? alpha(badgeStyle.color, 0.15) : alpha(theme.palette.text.secondary, 0.08),
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -159,7 +169,7 @@ function RankRow({ student, index }: { student: StudentRanking; index: number })
           variant="body2"
           sx={{
             fontWeight: 900,
-            color: badge ? badge.color : theme.palette.text.secondary,
+            color: badgeStyle ? badgeStyle.color : theme.palette.text.secondary,
             fontSize: "0.9rem",
           }}
         >
@@ -188,7 +198,7 @@ function RankRow({ student, index }: { student: StudentRanking; index: number })
           <Typography
             variant="body2"
             sx={{
-              fontWeight: badge ? 800 : 600,
+              fontWeight: badgeStyle ? 800 : 600,
               color: theme.palette.text.primary,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -197,13 +207,13 @@ function RankRow({ student, index }: { student: StudentRanking; index: number })
           >
             {student.name}
           </Typography>
-          {badge && (
+          {badgeStyle && badgeLabel && (
             <Chip
-              label={badge.label}
+              label={badgeLabel}
               size="small"
               sx={{
-                bgcolor: alpha(badge.color, 0.12),
-                color: badge.color,
+                bgcolor: alpha(badgeStyle.color, 0.12),
+                color: badgeStyle.color,
                 fontWeight: 700,
                 fontSize: "0.62rem",
                 height: 18,
@@ -216,8 +226,8 @@ function RankRow({ student, index }: { student: StudentRanking; index: number })
           <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
             {student.className}
           </Typography>
-          <Typography variant="caption" sx={{ color: alpha(theme.palette.text.secondary, 0.5) }}>
-            · {student.totalGrades} grades
+          <Typography variant="caption" sx={{ color: alpha(theme.palette.text.secondary, 0.7) }}>
+            {t("rankingsPage.gradesCount", `· ${student.totalGrades} grades`, { count: student.totalGrades })}
           </Typography>
         </Box>
       </Box>
@@ -233,13 +243,13 @@ function RankRow({ student, index }: { student: StudentRanking; index: number })
           variant="body1"
           sx={{
             fontWeight: 800,
-            color: badge ? badge.color : student.average >= 90 ? "#4CAF50" : student.average >= 70 ? primary : theme.palette.text.primary,
+            color: badgeStyle ? badgeStyle.color : student.average >= 90 ? "#4CAF50" : student.average >= 70 ? primary : theme.palette.text.primary,
           }}
         >
           {student.average}%
         </Typography>
         <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: "0.65rem" }}>
-          avg grade
+          {t("rankingsPage.avgGrade", "avg grade")}
         </Typography>
       </Box>
     </Box>
@@ -250,6 +260,7 @@ function RankRow({ student, index }: { student: StudentRanking; index: number })
 export default function RankingsPage() {
   const theme   = useTheme();
   const primary = theme.palette.primary.main;
+  const { t }   = useLanguage();
 
   const [rankings, setRankings] = useState<StudentRanking[]>([]);
   const [loading,  setLoading]  = useState(true);
@@ -299,19 +310,19 @@ export default function RankingsPage() {
           </Box>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 800, color: theme.palette.text.primary }}>
-              Student Rankings
+              {t("rankingsPage.title", "Student Rankings")}
             </Typography>
             <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-              Top performers across all classes
+              {t("rankingsPage.subtitle", "Top performers across all classes")}
             </Typography>
           </Box>
         </Box>
 
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Year</InputLabel>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>{t("rankingsPage.year", "Year")}</InputLabel>
           <Select
             value={year}
-            label="Year"
+            label={t("rankingsPage.year", "Year")}
             onChange={(e) => {
               setLoading(true);
               setYear(e.target.value);
@@ -351,7 +362,7 @@ export default function RankingsPage() {
               />
               <Box sx={{ textAlign: "center", pt: 3 }}>
                 <Typography variant="overline" sx={{ color: primary, fontWeight: 700, letterSpacing: 2 }}>
-                  TOP PERFORMERS
+                  {t("rankingsPage.topPerformersHeader", "TOP PERFORMERS")}
                 </Typography>
               </Box>
               <Podium top3={top3} />
@@ -362,7 +373,7 @@ export default function RankingsPage() {
           <TextField
             fullWidth
             size="small"
-            placeholder="Search student or class…"
+            placeholder={t("rankingsPage.searchPlaceholder", "Search student or class…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             InputProps={{
@@ -384,23 +395,36 @@ export default function RankingsPage() {
 
           {/* Stats bar */}
           <Box sx={{ display: "flex", gap: 2, mb: 2.5, flexWrap: "wrap" }}>
-            {[
-              { label: "Total", value: filtered.length, color: primary },
-              { label: "90%+", value: filtered.filter((r) => r.average >= 90).length, color: "#4CAF50" },
-              { label: "Trending Up", value: filtered.filter((r) => r.trend === "up").length, color: "#2196F3" },
-            ].map((s, i) => (
-              <Chip
-                key={i}
-                label={`${s.label}: ${s.value}`}
-                size="small"
-                sx={{
-                  bgcolor: alpha(s.color, 0.1),
-                  color: s.color,
-                  fontWeight: 700,
-                  border: `1px solid ${alpha(s.color, 0.25)}`,
-                }}
-              />
-            ))}
+            <Chip
+              label={t("rankingsPage.statTotal", `Total: ${filtered.length}`, { count: filtered.length })}
+              size="small"
+              sx={{
+                bgcolor: alpha(primary, 0.1),
+                color: primary,
+                fontWeight: 700,
+                border: `1px solid ${alpha(primary, 0.25)}`,
+              }}
+            />
+            <Chip
+              label={t("rankingsPage.statHigh", `90%+: ${filtered.filter((r) => r.average >= 90).length}`, { count: filtered.filter((r) => r.average >= 90).length })}
+              size="small"
+              sx={{
+                bgcolor: alpha("#4CAF50", 0.1),
+                color: "#4CAF50",
+                fontWeight: 700,
+                border: `1px solid ${alpha("#4CAF50", 0.25)}`,
+              }}
+            />
+            <Chip
+              label={t("rankingsPage.statTrendingUp", `Trending Up: ${filtered.filter((r) => r.trend === "up").length}`, { count: filtered.filter((r) => r.trend === "up").length })}
+              size="small"
+              sx={{
+                bgcolor: alpha("#2196F3", 0.1),
+                color: "#2196F3",
+                fontWeight: 700,
+                border: `1px solid ${alpha("#2196F3", 0.25)}`,
+              }}
+            />
           </Box>
 
           {/* List */}
@@ -419,7 +443,7 @@ export default function RankingsPage() {
               <Box sx={{ py: 6, textAlign: "center" }}>
                 <SearchIcon sx={{ fontSize: 48, color: alpha(theme.palette.text.secondary, 0.3), mb: 1 }} />
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                  No students found
+                  {t("rankingsPage.noStudentsFound", "No students found")}
                 </Typography>
               </Box>
             ) : (

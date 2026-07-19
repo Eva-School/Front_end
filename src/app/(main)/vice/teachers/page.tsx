@@ -384,7 +384,7 @@ export default function ViceTeachersPage() {
 
         // Phone validation (basic - accepts numbers, spaces, dashes, parentheses)
         const phoneRegex = /^[\d\s\-\(\)]+$/;
-        const cleanPhone = teacherForm.phone.replace(/\s/g, "");
+        const cleanPhone = teacherForm.phone.replace(/\D/g, "");
         if (cleanPhone.length < 8 || cleanPhone.length > 15) {
             setTeacherError(t("teachers.phoneLength", "Phone number must be between 8 and 15 digits"));
             return;
@@ -808,7 +808,7 @@ export default function ViceTeachersPage() {
                                                 fontWeight: 700, fontSize: '0.85rem',
                                                 border: `1px solid ${alpha(primary, 0.25)}`,
                                             }}>
-                                                ✓ {t("teachers.classesSelected", "{count} class(es) selected").replace("{count}", String(selectedClassIds.length))}
+                                                ✓ {t("teachers.classesSelected", `${selectedClassIds.length} class(es) selected`, { count: selectedClassIds.length })}
                                             </Box>
                                         )}
 

@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   }
 
   const year = request.nextUrl.searchParams.get("year") ?? "2024-2025";
-  const api = (process.env.BACKEND_API_URL ?? "https://evaschool.runasp.net/api").replace(/\/+$/, "");
+  const api = (process.env.BACKEND_API_URL ?? "http://localhost:5080/api").replace(/\/+$/, "");
   try {
     const response = await fetch(`${api}/analytics/overview?year=${encodeURIComponent(year)}`, {
       headers: { Authorization: `Bearer ${token}` },

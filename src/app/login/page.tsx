@@ -13,13 +13,19 @@ import {
     TextField,
     Button,
     alpha,
+    Tooltip,
+    IconButton,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import LanguageIcon from "@mui/icons-material/Language";
 
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useThemeMode } from "@/context/ThemeModeContext";
 import { getRedirectPathByRole } from "@/utils/auth-redirect";
 
 const images = [
@@ -44,7 +50,8 @@ const LoginPage = () => {
     const theme = useTheme();
     const router = useRouter();
     const { login, isAuthenticated, user, loading } = useAuth();
-    const { t } = useLanguage();
+    const { t, toggleLanguage, language } = useLanguage();
+    const { mode, toggleMode } = useThemeMode();
 
     const [currentImage, setCurrentImage] = useState(0);
     const [username, setUsername] = useState("");
@@ -111,7 +118,69 @@ const LoginPage = () => {
     };
 
     return (
-        <Box sx={{ minHeight: "100vh", display: "flex", bgcolor: theme.palette.background.default }}>
+        <Box sx={{ minHeight: "100vh", display: "flex", bgcolor: theme.palette.background.default, position: "relative" }}>
+
+            {/* ===== Controls (top-right corner) ===== */}
+            <Box
+                sx={{
+                    position: "absolute",
+                    top: 16,
+                    right: 16,
+                    display: "flex",
+                    gap: 1,
+                    zIndex: 10,
+                }}
+            >
+                {/* Language Toggle */}
+                <Tooltip title={language === "ar" ? "English" : "عربي"} arrow>
+                    <IconButton
+                        onClick={toggleLanguage}
+                        component={motion.button}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        sx={{
+                            bgcolor: alpha(theme.palette.background.paper, 0.8),
+                            backdropFilter: "blur(10px)",
+                            border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                            color: theme.palette.text.primary,
+                            borderRadius: "12px",
+                            width: 42,
+                            height: 42,
+                            "&:hover": {
+                                bgcolor: alpha(theme.palette.primary.main, 0.15),
+                                color: theme.palette.primary.main,
+                            },
+                        }}
+                    >
+                        <LanguageIcon fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+
+                {/* Dark / Light Mode Toggle */}
+                <Tooltip title={mode === "dark" ? t("common.lightMode") : t("common.darkMode")} arrow>
+                    <IconButton
+                        onClick={toggleMode}
+                        component={motion.button}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        sx={{
+                            bgcolor: alpha(theme.palette.background.paper, 0.8),
+                            backdropFilter: "blur(10px)",
+                            border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                            color: theme.palette.text.primary,
+                            borderRadius: "12px",
+                            width: 42,
+                            height: 42,
+                            "&:hover": {
+                                bgcolor: alpha(theme.palette.primary.main, 0.15),
+                                color: theme.palette.primary.main,
+                            },
+                        }}
+                    >
+                        {mode === "dark" ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+                    </IconButton>
+                </Tooltip>
+            </Box>
             {/* Right - Login (Form Section) */}
             <Box
                 sx={{
@@ -218,84 +287,86 @@ const LoginPage = () => {
                             {t("auth.signInSubtitle")}
                         </Typography>
 
-                        <TextField
-                            fullWidth
-                            label={t("auth.username")}
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            sx={{ 
-                                mb: 3,
-                                "& .MuiOutlinedInput-root": {
-                                    borderRadius: "12px",
-                                    bgcolor: alpha(theme.palette.background.default, 0.5),
-                                    transition: "all 0.3s ease",
-                                    "&:hover": { bgcolor: alpha(theme.palette.background.default, 0.8) },
-                                    "&.Mui-focused": { bgcolor: theme.palette.background.paper, boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}` }
-                                }
-                            }}
-                            autoComplete="username"
-                            inputProps={{ maxLength: 100 }}
-                        />
+                        <Box component="form" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+                          <TextField
+                              fullWidth
+                              label={t("auth.username")}
+                              value={username}
+                              onChange={(e) => setUsername(e.target.value)}
+                              sx={{ 
+                                  mb: 3,
+                                  "& .MuiOutlinedInput-root": {
+                                      borderRadius: "12px",
+                                      bgcolor: alpha(theme.palette.background.default, 0.5),
+                                      transition: "all 0.3s ease",
+                                      "&:hover": { bgcolor: alpha(theme.palette.background.default, 0.8) },
+                                      "&.Mui-focused": { bgcolor: theme.palette.background.paper, boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}` }
+                                  }
+                              }}
+                              autoComplete="username"
+                              inputProps={{ maxLength: 100 }}
+                          />
 
-                        <TextField
-                            fullWidth
-                            label={t("auth.password")}
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            sx={{ 
-                                mb: 2,
-                                "& .MuiOutlinedInput-root": {
-                                    borderRadius: "12px",
-                                    bgcolor: alpha(theme.palette.background.default, 0.5),
-                                    transition: "all 0.3s ease",
-                                    "&:hover": { bgcolor: alpha(theme.palette.background.default, 0.8) },
-                                    "&.Mui-focused": { bgcolor: theme.palette.background.paper, boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}` }
-                                }
-                            }}
-                            autoComplete="current-password"
-                            inputProps={{ maxLength: 200 }}
-                        />
+                          <TextField
+                              fullWidth
+                              label={t("auth.password")}
+                              type="password"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              sx={{ 
+                                  mb: 2,
+                                  "& .MuiOutlinedInput-root": {
+                                      borderRadius: "12px",
+                                      bgcolor: alpha(theme.palette.background.default, 0.5),
+                                      transition: "all 0.3s ease",
+                                      "&:hover": { bgcolor: alpha(theme.palette.background.default, 0.8) },
+                                      "&.Mui-focused": { bgcolor: theme.palette.background.paper, boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}` }
+                                  }
+                              }}
+                              autoComplete="current-password"
+                              inputProps={{ maxLength: 200 }}
+                          />
 
-                        <AnimatePresence>
-                            {error && (
-                                <Box
-                                    component={motion.div}
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                >
-                                    <Typography color="error" sx={{ mb: 2, fontSize: "0.875rem", fontWeight: 600 }}>
-                                        {error}
-                                    </Typography>
-                                </Box>
-                            )}
-                        </AnimatePresence>
+                          <AnimatePresence>
+                              {error && (
+                                  <Box
+                                      component={motion.div}
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: "auto" }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                  >
+                                      <Typography color="error" sx={{ mb: 2, fontSize: "0.875rem", fontWeight: 600 }}>
+                                          {error}
+                                      </Typography>
+                                  </Box>
+                              )}
+                          </AnimatePresence>
 
-                        <Button
-                            fullWidth
-                            disabled={loading}
-                            onClick={handleLogin}
-                            component={motion.button}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            sx={{
-                                backgroundColor: theme.palette.primary.main,
-                                color: theme.palette.primary.contrastText,
-                                height: 50,
-                                mt: 2,
-                                borderRadius: "12px",
-                                boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
-                                transition: "background-color 0.2s ease",
-                                "&:hover": {
-                                    backgroundColor: theme.palette.primary.dark,
-                                },
-                            }}
-                        >
-                            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-                                {loading ? t("auth.signingIn") : t("auth.signIn")}
-                            </Typography>
-                        </Button>
+                          <Button
+                              type="submit"
+                              fullWidth
+                              disabled={loading}
+                              component={motion.button}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              sx={{
+                                  backgroundColor: theme.palette.primary.main,
+                                  color: theme.palette.primary.contrastText,
+                                  height: 50,
+                                  mt: 2,
+                                  borderRadius: "12px",
+                                  boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+                                  transition: "background-color 0.2s ease",
+                                  "&:hover": {
+                                      backgroundColor: theme.palette.primary.dark,
+                                  },
+                              }}
+                          >
+                              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
+                                  {loading ? t("auth.signingIn") : t("auth.signIn")}
+                              </Typography>
+                          </Button>
+                        </Box>
 
                         <Typography
                             variant="body2"

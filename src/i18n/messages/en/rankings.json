@@ -1,0 +1,18 @@
+{
+  "rankingsPage": {
+    "title": "Student Rankings",
+    "subtitle": "Top performers across all classes",
+    "year": "Year",
+    "topPerformersHeader": "TOP PERFORMERS",
+    "searchPlaceholder": "Search student or class…",
+    "firstPlace": "🥇 1st Place",
+    "secondPlace": "🥈 2nd Place",
+    "thirdPlace": "🥉 3rd Place",
+    "statTotal": "Total: {count}",
+    "statHigh": "90%+: {count}",
+    "statTrendingUp": "Trending Up: {count}",
+    "gradesCount": "· {count} grades",
+    "avgGrade": "avg grade",
+    "noStudentsFound": "No students found"
+  }
+}

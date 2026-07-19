@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Box, CircularProgress, Typography, Button } from "@mui/material";
 import { MeResponse } from "@/services/auth.service";
@@ -17,9 +17,19 @@ export default function RoleGuard({ children, allowedRoles, fallbackRoute = "/lo
     const router = useRouter();
     const t = useTranslations();
     const { user, loading } = useAuth();
-    const isAuthorized = user !== null && allowedRoles.includes(user.role);
 
-    if (loading) {
+    const isLoggedIn = user !== null;
+    const isAuthorized = isLoggedIn && allowedRoles.includes(user!.role);
+
+    // إذا مش مسجل دخول → روّح على login بدون ما تعرض رسالة
+    useEffect(() => {
+        if (!loading && !isLoggedIn) {
+            router.replace("/login");
+        }
+    }, [loading, isLoggedIn, router]);
+
+    // أثناء التحميل أو وقت الـ redirect → اعرض spinner
+    if (loading || !isLoggedIn) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
                 <CircularProgress />
@@ -27,6 +37,7 @@ export default function RoleGuard({ children, allowedRoles, fallbackRoute = "/lo
         );
     }
 
+    // مسجل دخول بس دوره مش مسموح → اعرض رسالة غير مصرح
     if (!isAuthorized) {
         return (
             <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="100vh" gap={2}>
