@@ -513,6 +513,8 @@ export default function ViceTeachersPage() {
             phone: "",
             qualifications: "",
             department: "",
+            username: "",
+            password: "",
         });
         setTeacherError(null);
         setTeacherSuccess(false);
