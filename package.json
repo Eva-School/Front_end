@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "opennextjs-cloudflare build",
+    "build": "next build",
+    "build:cf": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && wrangler dev",
     "deploy": "opennextjs-cloudflare build && wrangler deploy",
     "lint": "eslint"
