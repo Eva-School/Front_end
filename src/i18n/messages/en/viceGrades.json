@@ -20,6 +20,17 @@
     "noRecentActivity": "No recent activity",
     "selectSemester": "Select Semester",
     "selectSemesterDescription": "Choose which semester you want to enter final grades for.",
-    "semester": "Semester"
+    "semester": "Semester",
+    "selectSubject": "Select Subject",
+    "saveDraft": "Save Draft",
+    "submitForApproval": "Submit for Approval",
+    "approveAndLock": "Approve & Lock Grades",
+    "studentsList": "Students List",
+    "department": "Department",
+    "class": "Class",
+    "noStudents": "No students found for this selection",
+    "unsaved": "Unsaved",
+    "saved": "Saved",
+    "empty": "Empty"
   }
 }

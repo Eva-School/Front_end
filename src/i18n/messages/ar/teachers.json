@@ -73,6 +73,11 @@
     "deleteAssignmentConfirm": "هل تريد حذف توزيع المعلم هذا نهائيًا؟",
     "assignmentDeleted": "تم حذف التوزيع.",
     "failedDeleteAssignment": "تعذّر حذف التوزيع.",
-    "classesSelected": "تم اختيار {count} فصل"
+    "classesSelected": "تم اختيار {count} فصل",
+    "username": "اسم المستخدم (اختياري)",
+    "usernamePlaceholder": "اتركه فارغاً للتوليد التلقائي",
+    "password": "كلمة المرور (اختياري)",
+    "passwordPlaceholder": "اتركها فارغة للتوليد التلقائي",
+    "passwordHelper": "يجب ألا تقل عن 6 أحرف، وأن تحتوي على أرقام، وحروف كبيرة وصغيرة، ورمز خاص."
   }
 }

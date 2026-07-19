@@ -20,6 +20,17 @@
     "noRecentActivity": "لا يوجد نشاط حديث",
     "selectSemester": "اختر الفصل الدراسي",
     "selectSemesterDescription": "اختر الفصل الدراسي الذي تريد إدخال درجاته النهائية.",
-    "semester": "الفصل الدراسي"
+    "semester": "الفصل الدراسي",
+    "selectSubject": "اختر المادة",
+    "saveDraft": "حفظ كمسودة",
+    "submitForApproval": "إرسال للاعتماد",
+    "approveAndLock": "اعتماد وقفل الدرجات",
+    "studentsList": "قائمة الطلاب",
+    "department": "القسم",
+    "class": "الفصل",
+    "noStudents": "لم يتم العثور على طلاب لهذا الاختيار",
+    "unsaved": "غير محفوظ",
+    "saved": "تم الحفظ",
+    "empty": "فارغ"
   }
 }

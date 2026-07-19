@@ -96,6 +96,8 @@ export default function ViceTeachersPage() {
         phone: "",
         qualifications: "",
         department: "",
+        username: "",
+        password: "",
     });
 
     /* ===================== ADD SUBJECT FORM ===================== */
@@ -411,6 +413,8 @@ export default function ViceTeachersPage() {
                 email: teacherForm.email.trim().toLowerCase(),
                 role: "Teacher",
                 phone: cleanPhone,
+                username: teacherForm.username.trim() ? sanitizeInput(teacherForm.username) : undefined,
+                password: teacherForm.password.trim() ? teacherForm.password : undefined,
                 fullName: {
                     firstName: sanitizeInput(teacherForm.firstName),
                     middleName: teacherForm.middleName ? sanitizeInput(teacherForm.middleName) : undefined,
@@ -433,6 +437,8 @@ export default function ViceTeachersPage() {
                 phone: "",
                 qualifications: "",
                 department: "",
+                username: "",
+                password: "",
             });
 
             // Close modal after a short delay to show success message
@@ -1106,6 +1112,30 @@ export default function ViceTeachersPage() {
                                 }
                                 required
                                 fullWidth
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                            />
+
+                            <TextField
+                                label={t("teachers.username", "Username (Optional)")}
+                                placeholder={t("teachers.usernamePlaceholder", "Leave empty for auto-generation")}
+                                value={teacherForm.username}
+                                onChange={(e) =>
+                                    setTeacherForm({ ...teacherForm, username: e.target.value })
+                                }
+                                fullWidth
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                            />
+
+                            <TextField
+                                label={t("teachers.password", "Password (Optional)")}
+                                placeholder={t("teachers.passwordPlaceholder", "Leave empty for auto-generation")}
+                                type="password"
+                                value={teacherForm.password}
+                                onChange={(e) =>
+                                    setTeacherForm({ ...teacherForm, password: e.target.value })
+                                }
+                                fullWidth
+                                helperText={t("teachers.passwordHelper", "Must be at least 6 characters, contain digits, uppercase, lowercase, and a non-alphanumeric character.")}
                                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                             />
 

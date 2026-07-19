@@ -5,7 +5,7 @@ import {
     Box, Container, Typography, Stack, Card, alpha, Chip, Skeleton,
     Table, TableHead, TableBody, TableRow, TableCell, TableContainer,
     Button, TextField, RadioGroup, FormControlLabel, Radio, Divider,
-    Alert, Snackbar, CircularProgress,
+    Alert, Snackbar, CircularProgress, Select, MenuItem,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +20,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { API_BASE_URL, secureFetch } from '@/config/api.config';
+import { useLanguage } from '@/context/LanguageContext';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ function FinalGradesDashboardContent() {
     const primaryColor = '#10B981';
 
     const { user } = useAuth();
+    const { t } = useLanguage();
     const isAdmin = user?.role === 'Admin';
 
     const [department, setDepartment] = useState('om');
@@ -87,9 +89,43 @@ function FinalGradesDashboardContent() {
         open: false, msg: '', severity: 'success',
     });
 
+    const [subjectFilter, setSubjectFilter] = useState<string>('');
+    const [availableSubjects, setAvailableSubjects] = useState<Array<{ id: string; name: string }>>([]);
+    const [subjectsLoading, setSubjectsLoading] = useState(true);
+
     const API = API_BASE_URL;
 
+    useEffect(() => {
+        async function fetchSubjects() {
+            setSubjectsLoading(true);
+            try {
+                const data = await secureFetch<Array<{ id?: string | number; subjectId?: string | number; subjectName?: string; name?: string }>>(
+                    `${API}/Subjects?year=${encodeURIComponent(level)}`
+                );
+                const list = (Array.isArray(data) ? data : []).flatMap((s) => {
+                    const id = s.id ?? s.subjectId;
+                    const name = s.subjectName ?? s.name;
+                    return id === undefined || !name ? [] : [{ id: String(id), name }];
+                });
+                setAvailableSubjects(list);
+                if (list.length > 0) {
+                    setSubjectFilter(list[0].id);
+                }
+            } catch (error) {
+                console.error("Failed to fetch subjects:", error);
+                setAvailableSubjects([]);
+            } finally {
+                setSubjectsLoading(false);
+            }
+        }
+        fetchSubjects();
+    }, [level, API]);
+
     const loadGrades = useCallback(async () => {
+        if (!subjectFilter) {
+            setGrades([]);
+            return;
+        }
         setLoading(true);
         try {
             const classData = await secureFetch<Array<{ classId?: string | number; id?: string | number; className?: string; name?: string }>>(
@@ -101,7 +137,7 @@ function FinalGradesDashboardContent() {
                 return id === undefined || !name ? [] : [{ id: String(id), name }];
             }));
 
-            const query = new URLSearchParams({ level, semester, department });
+            const query = new URLSearchParams({ level, semester, department, subjectId: subjectFilter });
             if (classFilter !== 'all') query.set('classId', classFilter);
             const data = await secureFetch<GradesResponse>(
                 `${API}/vice/grades/final/students?${query.toString()}`
@@ -125,7 +161,7 @@ function FinalGradesDashboardContent() {
         } finally {
             setLoading(false);
         }
-    }, [level, semester, department, classFilter, API]);
+    }, [level, semester, department, classFilter, subjectFilter, API]);
 
     useEffect(() => { loadGrades(); }, [loadGrades]);
 
@@ -136,11 +172,17 @@ function FinalGradesDashboardContent() {
             setSaving(false);
             return;
         }
+        if (!subjectFilter) {
+            setSnack({ open: true, msg: 'Select a subject before saving grades.', severity: 'error' });
+            setSaving(false);
+            return;
+        }
         const payload = {
             level,
             semester: Number(semester),
             department,
             classId: Number(classFilter),
+            subjectId: Number(subjectFilter),
             grades: Object.entries(localGrades)
                 .filter(([, score]) => score !== null)
                 .map(([studentId, score]) => ({ studentId, score })),
@@ -160,12 +202,16 @@ function FinalGradesDashboardContent() {
     };
 
     const handleSubmit = async () => {
+        if (!subjectFilter) {
+            setSnack({ open: true, msg: 'Select a subject before submitting grades.', severity: 'error' });
+            return;
+        }
         setSubmitting(true);
         try {
             await secureFetch(`${API}/vice/grades/final/submit`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ level, semester: Number(semester), department, classId: classFilter === 'all' ? null : Number(classFilter) }),
+                body: JSON.stringify({ level, semester: Number(semester), department, classId: classFilter === 'all' ? null : Number(classFilter), subjectId: Number(subjectFilter) }),
             });
             setSnack({ open: true, msg: 'Grades submitted for approval!', severity: 'success' });
             setStatus('submitted');
@@ -177,12 +223,16 @@ function FinalGradesDashboardContent() {
     };
 
     const handleApprove = async () => {
+        if (!subjectFilter) {
+            setSnack({ open: true, msg: 'Select a subject before approving grades.', severity: 'error' });
+            return;
+        }
         setApproving(true);
         try {
             await secureFetch(`${API}/admin/grades/final/approve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ level, semester: Number(semester), department, classId: classFilter === 'all' ? null : classFilter }),
+                body: JSON.stringify({ level, semester: Number(semester), department, classId: classFilter === 'all' ? null : classFilter, subjectId: Number(subjectFilter) }),
             });
             setSnack({ open: true, msg: 'Grades approved and locked successfully!', severity: 'success' });
             setStatus('approved');
@@ -241,7 +291,7 @@ function FinalGradesDashboardContent() {
                                 sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.text.secondary }}
                             >
                                 <ArrowBackIcon fontSize="small" />
-                                <Typography variant="body2" fontWeight={600} color="inherit">Back to Levels</Typography>
+                                <Typography variant="body2" fontWeight={600} color="inherit">{t('gradeSelection.backToLevels', 'Back to Levels')}</Typography>
                             </Box>
                         </Link>
 
@@ -269,17 +319,17 @@ function FinalGradesDashboardContent() {
                                                 lineHeight: 1.1,
                                             }}
                                         >
-                                            {levelLabel} — Final Grades
+                                            {t(`vice.${level.toLowerCase()}`, levelLabel)} — {t('viceGrades.finalGrades', 'Final Grades')}
                                         </Typography>
                                     </Stack>
                                     <Stack direction="row" gap={1} mt={0.5}>
                                         <Chip
-                                            label={`Semester ${semester}`}
+                                            label={`${t('viceGrades.semester', 'Semester')} ${semester}`}
                                             size="small"
                                             sx={{ fontWeight: 700, bgcolor: alpha(primaryColor, 0.1), color: primaryColor }}
                                         />
                                         <Chip
-                                            label={meta.emoji + ' ' + levelLabel}
+                                            label={meta.emoji + ' ' + t(`vice.${level.toLowerCase()}`, levelLabel)}
                                             size="small"
                                             sx={{ fontWeight: 700, bgcolor: alpha(meta.color, 0.1), color: meta.color }}
                                         />
@@ -312,7 +362,7 @@ function FinalGradesDashboardContent() {
                                                 '&:hover': { borderColor: primaryColor, bgcolor: alpha(primaryColor, 0.06) },
                                             }}
                                         >
-                                            {saving ? 'Saving...' : 'Save Draft'}
+                                            {saving ? t('common.saving', 'Saving...') : t('viceGrades.saveDraft', 'Save Draft')}
                                         </Button>
                                         <Button
                                             onClick={handleSubmit}
@@ -326,7 +376,7 @@ function FinalGradesDashboardContent() {
                                                 boxShadow: `0 6px 20px ${alpha(primaryColor, 0.35)}`,
                                             }}
                                         >
-                                            {submitting ? 'Submitting...' : 'Submit for Approval'}
+                                            {submitting ? t('common.submitting', 'Submitting...') : t('viceGrades.submitForApproval', 'Submit for Approval')}
                                         </Button>
                                     </>
                                 )}
@@ -343,7 +393,7 @@ function FinalGradesDashboardContent() {
                                             boxShadow: `0 6px 20px ${alpha('#10B981', 0.35)}`,
                                         }}
                                     >
-                                        {approving ? 'Approving...' : 'Approve & Lock Grades'}
+                                        {approving ? t('common.approving', 'Approving...') : t('viceGrades.approveAndLock', 'Approve & Lock Grades')}
                                     </Button>
                                 )}
                                 {status === 'approved' && (
@@ -374,12 +424,47 @@ function FinalGradesDashboardContent() {
                         <Box sx={{ px: 4, py: 2.5, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}` }}>
                             <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
                                 <Typography variant="h6" fontWeight={800} color="text.primary">
-                                    Students List
+                                    {t('viceGrades.studentsList', 'Students List')}
                                 </Typography>
                                 <Stack direction="row" alignItems="center" gap={3} flexWrap="wrap">
+                                    {/* Subject Filter */}
                                     <Stack direction="row" alignItems="center" gap={2}>
                                         <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                                            Department:
+                                            {t('viceGrades.selectSubject', 'Select Subject')}:
+                                        </Typography>
+                                        {subjectsLoading ? (
+                                            <CircularProgress size={16} />
+                                        ) : (
+                                            <Select
+                                                size="small"
+                                                value={subjectFilter}
+                                                onChange={(e) => setSubjectFilter(e.target.value)}
+                                                sx={{
+                                                    minWidth: 160,
+                                                    borderRadius: '12px',
+                                                    '& .MuiOutlinedInput-notchedOutline': {
+                                                        borderColor: alpha(primaryColor, 0.25),
+                                                    },
+                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                        borderColor: primaryColor,
+                                                    },
+                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                        borderColor: primaryColor,
+                                                    },
+                                                }}
+                                            >
+                                                {availableSubjects.map((sub) => (
+                                                    <MenuItem key={sub.id} value={sub.id}>
+                                                        {sub.name}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        )}
+                                    </Stack>
+
+                                    <Stack direction="row" alignItems="center" gap={2}>
+                                        <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                                            {t('viceGrades.department', 'Department')}:
                                         </Typography>
                                         <RadioGroup
                                             row
@@ -411,7 +496,7 @@ function FinalGradesDashboardContent() {
 
                                     <Stack direction="row" alignItems="center" gap={2}>
                                         <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                                            Class:
+                                            {t('viceGrades.class', 'Class')}:
                                         </Typography>
                                         <RadioGroup
                                             row
@@ -448,7 +533,7 @@ function FinalGradesDashboardContent() {
                                             background: `linear-gradient(90deg, ${alpha(primaryColor, 0.1)}, ${alpha(meta.color, 0.08)})`,
                                         }}
                                     >
-                                        {['#', 'Student Name', 'Code', 'Class', `Semester ${semester} Score`, 'Actions'].map((h) => (
+                                        {['#', t('common.studentName', 'Student Name'), t('common.code', 'Code'), t('teachers.class', 'Class'), `${t('viceGrades.semester', 'Semester')} ${semester} - ${t('common.score', 'Score')}`, t('common.status', 'Status')].map((h) => (
                                             <TableCell
                                                 key={h}
                                                 align={h === '#' ? 'center' : 'left'}
@@ -476,7 +561,7 @@ function FinalGradesDashboardContent() {
                                                     <TableRow>
                                                         <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
                                                             <Typography color="text.disabled" fontWeight={500}>
-                                                                No students found for this selection
+                                                                {t('viceGrades.noStudents', 'No students found for this selection')}
                                                             </Typography>
                                                         </TableCell>
                                                     </TableRow>
@@ -543,19 +628,19 @@ function FinalGradesDashboardContent() {
                                                                 && localGrades[student.studentId] !== undefined
                                                                 && localGrades[student.studentId] !== student.score ? (
                                                                 <Chip
-                                                                    label="Unsaved"
+                                                                    label={t('viceGrades.unsaved', 'Unsaved')}
                                                                     size="small"
                                                                     sx={{ fontWeight: 700, bgcolor: alpha('#F59E0B', 0.12), color: '#F59E0B', fontSize: '0.65rem' }}
                                                                 />
                                                             ) : localGrades[student.studentId] !== null ? (
                                                                 <Chip
-                                                                    label="Saved"
+                                                                    label={t('viceGrades.saved', 'Saved')}
                                                                     size="small"
                                                                     sx={{ fontWeight: 700, bgcolor: alpha(primaryColor, 0.1), color: primaryColor, fontSize: '0.65rem' }}
                                                                 />
                                                             ) : (
                                                                 <Chip
-                                                                    label="Empty"
+                                                                    label={t('viceGrades.empty', 'Empty')}
                                                                     size="small"
                                                                     sx={{ fontWeight: 700, bgcolor: alpha(theme.palette.text.primary, 0.06), color: 'text.disabled', fontSize: '0.65rem' }}
                                                                 />

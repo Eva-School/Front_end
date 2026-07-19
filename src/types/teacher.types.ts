@@ -10,6 +10,8 @@ export interface CreateTeacherPayload {
   email: string;
   role: string;
   phone: string;
+  username?: string;
+  password?: string;
   fullName: {
     firstName: string;
     middleName?: string;

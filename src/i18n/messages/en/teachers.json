@@ -73,6 +73,11 @@
     "deleteAssignmentConfirm": "Delete this teacher assignment permanently?",
     "assignmentDeleted": "Assignment deleted.",
     "failedDeleteAssignment": "Failed to delete assignment.",
-    "classesSelected": "{count} class(es) selected"
+    "classesSelected": "{count} class(es) selected",
+    "username": "Username (Optional)",
+    "usernamePlaceholder": "Leave empty for auto-generation",
+    "password": "Password (Optional)",
+    "passwordPlaceholder": "Leave empty for auto-generation",
+    "passwordHelper": "Must be at least 6 characters, contain digits, uppercase, lowercase, and a non-alphanumeric character."
   }
 }
