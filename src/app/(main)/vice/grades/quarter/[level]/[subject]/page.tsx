@@ -233,7 +233,7 @@ function QuarterSubjectGradesContent() {
                     }),
                 }),
             });
-            setSnack({ open: true, msg: t('quarterEntry.studentsSaved', `Saved grades for ${modifiedStudents.length} student(s) successfully!`).replace('{count}', String(modifiedStudents.length)), severity: 'success' });
+            setSnack({ open: true, msg: t('quarterEntry.studentsSaved', { count: modifiedStudents.length }), severity: 'success' });
             setStudents((previous) => previous.map((student) => ({ ...student, ...localGrades[student.studentId] })));
         } catch {
             setSnack({ open: true, msg: t('quarterEntry.networkError'), severity: 'error' });

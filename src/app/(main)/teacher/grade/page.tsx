@@ -224,7 +224,7 @@ function GradeContent() {
         ? { ...item, q1, q2, q3, q4 }
         : item));
       setSavedIds((prev) => new Set([...prev, student.id]));
-      appToast.success(t("teacherModule.gradesSavedFor", `Grades saved for ${student.name}`).replace("{name}", student.name));
+      appToast.success(t("teacherModule.gradesSavedFor", { name: student.name }));
 
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : t("teacherModule.failedSaveGrade"));
@@ -263,7 +263,7 @@ function GradeContent() {
     }
 
     setBulkSaving(false);
-    const summary = t("teacherModule.gradesSavedCount", `Saved grades for ${successCount}/${studentsToSave.length} students`).replace("{count}", String(successCount)).replace("{total}", String(studentsToSave.length));
+    const summary = t("teacherModule.gradesSavedCount", { count: successCount, total: studentsToSave.length });
     if (failedStudents.length > 0) {
       appToast.error(`${summary}. ${t("teacherModule.failedStudents", "Failed")}: ${failedStudents.join(", ")}`);
     } else if (successCount > 0) {

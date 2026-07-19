@@ -283,7 +283,7 @@ function ClassesContent() {
                       {subject.subjectName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {t("teacherModule.classCount").replace("{count}", String(subject.classes.length))}
+                      {t("teacherModule.classCount", { count: subject.classes.length })}
                     </Typography>
                   </Box>
                 </Box>
