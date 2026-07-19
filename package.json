@@ -2,6 +2,10 @@
   "name": "school-grading-system",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "next dev --webpack",
     "build": "opennextjs-cloudflare build",
