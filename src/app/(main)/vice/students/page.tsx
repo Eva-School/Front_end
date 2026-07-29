@@ -10,11 +10,13 @@ import {
   Chip, Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import AddStudentModal from '@/components/vice/students/AddStudentModal';
+import BulkImportModal from '@/components/vice/students/BulkImportModal';
 import { ClassesAPI } from '@/data/classes.api';
 import { ViceStudentsAPI } from '@/data/vice-students.api';
 import { AcademicYearsAPI, type AcademicYearOption } from '@/data/academic-years.api';
@@ -42,6 +44,7 @@ export default function ViceStudentsPage() {
 
   // Modal state
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
 
   // Filters
   const [academicYear, setAcademicYear] = useState<string>('');
@@ -402,24 +405,43 @@ export default function ViceStudentsPage() {
                             </Typography>
                           </Box>
                         </Box>
-                        {/* Add New Student — no classId, goes into pool */}
-                        <Button
-                          component={motion.button}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          variant="contained"
-                          startIcon={<AddIcon />}
-                          onClick={() => setIsAddStudentModalOpen(true)}
-                          sx={{
-                            background: `linear-gradient(45deg, ${primary}, ${secondary})`,
-                            color: theme.palette.primary.contrastText,
-                            fontWeight: 700,
-                            borderRadius: '12px',
-                            boxShadow: `0 4px 14px ${alpha(primary, 0.4)}`,
-                          }}
-                        >
-                          {t('students.addNewStudent')}
-                        </Button>
+                        {/* Action buttons */}
+                        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                          <Button
+                            component={motion.button}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            variant="outlined"
+                            startIcon={<CloudUploadIcon />}
+                            onClick={() => setIsBulkImportModalOpen(true)}
+                            sx={{
+                              borderColor: primary,
+                              color: primary,
+                              fontWeight: 700,
+                              borderRadius: '12px',
+                              px: 2,
+                            }}
+                          >
+                            {t('students.importExcel')}
+                          </Button>
+                          <Button
+                            component={motion.button}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => setIsAddStudentModalOpen(true)}
+                            sx={{
+                              background: `linear-gradient(45deg, ${primary}, ${secondary})`,
+                              color: theme.palette.primary.contrastText,
+                              fontWeight: 700,
+                              borderRadius: '12px',
+                              boxShadow: `0 4px 14px ${alpha(primary, 0.4)}`,
+                            }}
+                          >
+                            {t('students.addNewStudent')}
+                          </Button>
+                        </Box>
                       </Box>
 
                       {/* Filters */}
@@ -647,6 +669,16 @@ export default function ViceStudentsPage() {
             await loadPoolStudents();
             appToast.success(t('modal.studentAddedSuccess'));
           }}
+        />
+
+        {/* Bulk Import Excel Modal */}
+        <BulkImportModal
+          open={isBulkImportModalOpen}
+          onClose={() => setIsBulkImportModalOpen(false)}
+          year={level}
+          department={department}
+          academicYearName={academicYear}
+          onSuccess={() => loadPoolStudents()}
         />
       </Box>
     </>

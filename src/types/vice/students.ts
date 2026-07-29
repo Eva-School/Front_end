@@ -13,6 +13,7 @@ export interface ViceStudent {
   lastName: string;
   email: string;
   phone: string;
+  address?: string;
   department: ViceDepartment;
   className: string;
   year: ViceLevel;
@@ -26,6 +27,7 @@ export interface CreateViceStudentPayload {
   studentCode: string;
   email: string;
   phone: string;
+  address?: string;
   department: ViceDepartment;
   year: ViceLevel;
   classId?: number;

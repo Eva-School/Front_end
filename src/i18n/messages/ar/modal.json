@@ -7,6 +7,7 @@
     "studentCode": "كود الطالب",
     "email": "البريد الإلكتروني",
     "phone": "الهاتف",
+    "address": "العنوان",
     "saveStudent": "حفظ الطالب",
     "saving": "جاري الحفظ...",
     "studentAddedSuccess": "تمت إضافة الطالب بنجاح",

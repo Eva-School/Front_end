@@ -32,6 +32,7 @@
     "levelWheeler": "Wheeler",
     "levelSenior": "Senior",
     "studentCode": "Student Code",
+    "address": "Address",
     "actions": "Actions",
     "noStudentsForFilter": "No students found for this academic year, department, and level.",
     "unassignConfirm": "Are you sure you want to unassign this student from their class?",
@@ -51,6 +52,8 @@
     "emailRequired": "Email address is required.",
     "phoneRequired": "Phone number is required.",
     "validEmail": "Enter a valid email address.",
-    "phoneDigits": "Phone number must contain 8 to 15 digits."
+    "phoneDigits": "Phone number must contain 8 to 15 digits.",
+    "bulkImport": "Bulk Import (Excel)",
+    "importExcel": "Import from Excel"
   }
 }

@@ -26,6 +26,7 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
         studentCode: '',
         email: '',
         phone: '',
+        address: '',
     });
     
     const [submitting, setSubmitting] = useState(false);
@@ -44,6 +45,7 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
                 studentCode: student.studentCode || '',
                 email: student.email || '',
                 phone: student.phone || '',
+                address: student.address || '',
             });
             setError(null);
         }
@@ -85,6 +87,7 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
                 studentCode: form.studentCode.trim(),
                 email: form.email.trim().toLowerCase(),
                 phone: form.phone.trim(),
+                address: form.address.trim() || undefined,
                 department: student.department,
                 year: student.year,
                 classId: student.classId || undefined,
@@ -170,6 +173,14 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
                         onChange={(e) => setForm({ ...form, phone: e.target.value })}
                         variant="outlined"
                         required
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f5f5f5' } }}
+                    />
+                    <TextField
+                        fullWidth
+                        label={t('modal.address')}
+                        value={form.address}
+                        onChange={(e) => setForm({ ...form, address: e.target.value })}
+                        variant="outlined"
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f5f5f5' } }}
                     />
                     <TextField

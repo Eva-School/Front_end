@@ -37,6 +37,26 @@
     "saved": "محفوظ",
     "failedSaveGrade": "تعذّر حفظ الدرجات.",
     "gradesSavedFor": "تم حفظ درجات {name}.",
-    "gradesSavedCount": "تم حفظ درجات {count} من أصل {total} طالب."
+    "gradesSavedCount": "تم حفظ درجات {count} من أصل {total} طالب.",
+    "quarterGradesTab": "الدرجات الفصلية (الكوارتر)",
+    "quizzesTab": "الاختبارات القصيرة (Quizzes)",
+    "quizzesList": "قائمة الاختبارات القصيرة",
+    "createQuiz": "إنشاء اختبار قصير جديد",
+    "editQuiz": "تعديل الاختبار",
+    "deleteQuiz": "حذف الاختبار",
+    "confirmDeleteQuiz": "هل أنت متاكد من رغبتك في حذف هذا الاختبار وقيم درجاته؟",
+    "quizTitle": "عنوان الاختبار",
+    "maxScore": "الدرجة العظمى",
+    "quizDate": "تاريخ الاختبار",
+    "description": "الملاحظات / الوصف",
+    "enterQuizGrades": "رصد درجات الطلاب",
+    "gradedCount": "الدرجات المرصودة",
+    "noQuizzesYet": "لا توجد اختبارات قصيرة مُنشأة لهذا الفصل حتى الآن.",
+    "createQuizSuccess": "تم إنشاء الاختبار بنجاح.",
+    "updateQuizSuccess": "تم تحديث الاختبار بنجاح.",
+    "deleteQuizSuccess": "تم حذف الاختبار بنجاح.",
+    "saveQuizGradesSuccess": "تم حفظ درجات الاختبار بنجاح.",
+    "score": "الدرجة",
+    "notes": "ملاحظات"
   }
 }

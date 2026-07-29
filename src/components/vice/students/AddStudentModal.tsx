@@ -19,6 +19,7 @@ interface AddStudentModalProps {
         studentCode: string;
         email: string;
         phone: string;
+        address?: string;
     }) => Promise<void>;
 }
 
@@ -34,6 +35,7 @@ export default function AddStudentModal({ open, onClose, year, department, onSub
         studentCode: '',
         email: '',
         phone: '',
+        address: '',
     });
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -74,6 +76,7 @@ export default function AddStudentModal({ open, onClose, year, department, onSub
                 studentCode: form.studentCode.trim(),
                 email: form.email.trim().toLowerCase(),
                 phone: form.phone.trim(),
+                address: form.address.trim(),
             });
             setSuccess(true);
             setForm({
@@ -83,6 +86,7 @@ export default function AddStudentModal({ open, onClose, year, department, onSub
                 studentCode: '',
                 email: '',
                 phone: '',
+                address: '',
             });
             setTimeout(() => {
                 onClose();
@@ -237,6 +241,16 @@ export default function AddStudentModal({ open, onClose, year, department, onSub
                             variant="outlined"
                             required
                             aria-required="true"
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f5f5f5' }, '& .MuiInputBase-input': { color: '#000' }, '& .MuiInputLabel-root': { color: '#555' } }}
+                        />
+                    </Box>
+                    <Box sx={{ gridColumn: { sm: "span 2" } }}>
+                        <TextField
+                            fullWidth
+                            label={t('modal.address')}
+                            value={form.address}
+                            onChange={(e) => setForm({ ...form, address: e.target.value })}
+                            variant="outlined"
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', backgroundColor: '#f5f5f5' }, '& .MuiInputBase-input': { color: '#000' }, '& .MuiInputLabel-root': { color: '#555' } }}
                         />
                     </Box>
