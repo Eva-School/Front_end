@@ -14,6 +14,14 @@ export interface ViceStudentsListParams {
   academicYearName?: string;
 }
 
+export interface ViceBulkImportResponse {
+  totalRows: number;
+  successCount: number;
+  failureCount: number;
+  errors: string[];
+  importedStudents: ViceStudent[];
+}
+
 export const ViceStudentsAPI = {
   async list(params: ViceStudentsListParams): Promise<ViceStudent[]> {
     const qs = new URLSearchParams();
@@ -58,5 +66,24 @@ export const ViceStudentsAPI = {
     await secureFetch(`${API_BASE_URL}/vice/students/${encodeURIComponent(studentId)}`, {
       method: "DELETE",
     });
+  },
+
+  async importExcel(
+    file: File,
+    params: { year: ViceLevel; department: ViceDepartment; academicYearName?: string }
+  ): Promise<ViceBulkImportResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const qs = new URLSearchParams();
+    qs.set("year", params.year);
+    qs.set("department", params.department);
+    if (params.academicYearName) qs.set("academicYearName", params.academicYearName);
+
+    return secureFetch(`${API_BASE_URL}/vice/students/import?${qs.toString()}`, {
+      method: "POST",
+      headers: { "Content-Type": "multipart/form-data" },
+      body: formData,
+    }) as Promise<ViceBulkImportResponse>;
   },
 };

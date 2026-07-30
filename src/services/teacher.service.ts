@@ -143,6 +143,56 @@ export interface SaveGradePayload {
   q4?: number;
 }
 
+export interface Quiz {
+  quizId: number;
+  title: string;
+  maxScore: number;
+  quizDate: string;
+  classId: number;
+  subjectId: number;
+  academicYearId: number;
+  description?: string;
+  createdAt: string;
+  gradedStudentsCount: number;
+  totalStudentsCount: number;
+}
+
+export interface StudentQuizGrade {
+  studentId: number;
+  studentName: string;
+  studentCode?: string;
+  score?: number;
+  notes?: string;
+  gradedAt?: string;
+}
+
+export interface QuizDetail {
+  quiz: Quiz;
+  grades: StudentQuizGrade[];
+}
+
+export interface CreateQuizPayload {
+  title: string;
+  maxScore: number;
+  quizDate?: string;
+  classId: number;
+  subjectId: number;
+  description?: string;
+}
+
+export interface UpdateQuizPayload {
+  title: string;
+  maxScore: number;
+  quizDate?: string;
+  description?: string;
+}
+
+export interface SaveQuizGradeInput {
+  studentId: number;
+  score?: number;
+  notes?: string;
+}
+
 export async function saveStudentGrade(payload: SaveGradePayload): Promise<void> {
   await secureFetch(`${API_BASE_URL}/teacher/grades`, {
     method: "POST",
@@ -158,10 +208,54 @@ export async function saveStudentGrade(payload: SaveGradePayload): Promise<void>
   });
 }
 
+export async function getQuizzes(classId: string | number, subjectId: string | number): Promise<Quiz[]> {
+  const query = new URLSearchParams({ classId: String(toNumber(classId)), subjectId: String(toNumber(subjectId)) });
+  const payload = await secureFetch(`${API_BASE_URL}/teacher/quizzes?${query.toString()}`);
+  if (!Array.isArray(payload)) throw new Error("Invalid quizzes response.");
+  return payload as Quiz[];
+}
+
+export async function getQuizDetail(quizId: number): Promise<QuizDetail> {
+  return (await secureFetch(`${API_BASE_URL}/teacher/quizzes/${quizId}`)) as QuizDetail;
+}
+
+export async function createQuiz(payload: CreateQuizPayload): Promise<Quiz> {
+  return (await secureFetch(`${API_BASE_URL}/teacher/quizzes`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })) as Quiz;
+}
+
+export async function updateQuiz(quizId: number, payload: UpdateQuizPayload): Promise<Quiz> {
+  return (await secureFetch(`${API_BASE_URL}/teacher/quizzes/${quizId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  })) as Quiz;
+}
+
+export async function deleteQuiz(quizId: number): Promise<void> {
+  await secureFetch(`${API_BASE_URL}/teacher/quizzes/${quizId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function saveQuizGrades(quizId: number, grades: SaveQuizGradeInput[]): Promise<QuizDetail> {
+  return (await secureFetch(`${API_BASE_URL}/teacher/quizzes/${quizId}/grades`, {
+    method: "POST",
+    body: JSON.stringify({ grades }),
+  })) as QuizDetail;
+}
+
 export const teacherService = {
   getTeacherDashboardYears,
   getTeacherClassesGrouped,
   getTeacherProfile,
   getClassStudents,
   saveStudentGrade,
+  getQuizzes,
+  getQuizDetail,
+  createQuiz,
+  updateQuiz,
+  deleteQuiz,
+  saveQuizGrades,
 };

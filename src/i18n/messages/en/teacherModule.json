@@ -37,6 +37,26 @@
     "saved": "Saved",
     "failedSaveGrade": "Failed to save grades.",
     "gradesSavedFor": "Grades saved for {name}.",
-    "gradesSavedCount": "Saved grades for {count}/{total} students."
+    "gradesSavedCount": "Saved grades for {count}/{total} students.",
+    "quarterGradesTab": "Quarter Grades",
+    "quizzesTab": "Quizzes",
+    "quizzesList": "Quizzes List",
+    "createQuiz": "Create New Quiz",
+    "editQuiz": "Edit Quiz",
+    "deleteQuiz": "Delete Quiz",
+    "confirmDeleteQuiz": "Are you sure you want to delete this quiz and all its grades?",
+    "quizTitle": "Quiz Title",
+    "maxScore": "Max Score",
+    "quizDate": "Quiz Date",
+    "description": "Description / Notes",
+    "enterQuizGrades": "Grade Students",
+    "gradedCount": "Graded Students",
+    "noQuizzesYet": "No quizzes created for this class yet.",
+    "createQuizSuccess": "Quiz created successfully.",
+    "updateQuizSuccess": "Quiz updated successfully.",
+    "deleteQuizSuccess": "Quiz deleted successfully.",
+    "saveQuizGradesSuccess": "Quiz grades saved successfully.",
+    "score": "Score",
+    "notes": "Notes"
   }
 }

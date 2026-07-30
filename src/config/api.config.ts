@@ -22,7 +22,9 @@ const getRefreshToken = (): string | null =>
 
 const buildHeaders = (baseHeaders?: HeadersInit, token?: string | null): Headers => {
   const headers = new Headers(baseHeaders);
-  if (!headers.has("Content-Type")) {
+  if (headers.get("Content-Type") === "multipart/form-data") {
+    headers.delete("Content-Type");
+  } else if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   if (token) {

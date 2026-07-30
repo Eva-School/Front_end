@@ -10,6 +10,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import SchoolIcon from '@mui/icons-material/School';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +20,7 @@ import { AcademicYearsAPI, type AcademicYearOption } from '@/data/academic-years
 import type { CreateViceStudentPayload, ViceStudent, ViceDepartment, ViceLevel } from '@/types/vice/students';
 import { appToast } from '@/hooks/useAppToast';
 import EditStudentModal from '@/components/vice/students/EditStudentModal';
+import BulkImportModal from '@/components/vice/students/BulkImportModal';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTranslations } from 'next-intl';
 
@@ -46,6 +48,7 @@ export default function AllStudentsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [editingStudent, setEditingStudent] = useState<ViceStudent | null>(null);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
 
   const [departmentFilter, setDepartmentFilter] = useState<ViceDepartment>('OM');
   const [levelFilter, setLevelFilter] = useState<ViceLevel>('junior');
@@ -187,19 +190,35 @@ export default function AllStudentsPage() {
                     </Typography>
                   </Box>
                   
-                  <Button
-                    variant="contained"
-                    onClick={() => router.push('/vice/students/promote')}
-                    sx={{
-                      background: `linear-gradient(45deg, ${primary}, ${theme.palette.secondary?.main || primary})`,
-                      color: '#fff',
-                      fontWeight: 'bold',
-                      borderRadius: '12px',
-                      px: 3,
-                    }}
-                  >
-                    {t('students.promoteStudents')}
-                  </Button>
+                  <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<CloudUploadIcon />}
+                      onClick={() => setIsBulkImportModalOpen(true)}
+                      sx={{
+                        borderColor: primary,
+                        color: primary,
+                        fontWeight: 'bold',
+                        borderRadius: '12px',
+                        px: 2.5,
+                      }}
+                    >
+                      {t('students.importExcel')}
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => router.push('/vice/students/promote')}
+                      sx={{
+                        background: `linear-gradient(45deg, ${primary}, ${theme.palette.secondary?.main || primary})`,
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        borderRadius: '12px',
+                        px: 3,
+                      }}
+                    >
+                      {t('students.promoteStudents')}
+                    </Button>
+                  </Box>
                 </Box>
 
                 {/* Filters */}
@@ -256,6 +275,7 @@ export default function AllStudentsPage() {
                       <TableRow sx={{ bgcolor: alpha(primary, 0.1) }}>
                         <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.studentName')}</TableCell>
                         <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.studentCode')}</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.address')}</TableCell>
                         <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.department')}</TableCell>
                         <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.academicYear')}</TableCell>
                         <TableCell sx={{ fontWeight: 800, color: theme.palette.text.primary, borderBottom: 'none' }}>{t('students.class')}</TableCell>
@@ -266,13 +286,13 @@ export default function AllStudentsPage() {
                       <AnimatePresence mode="popLayout">
                         {loading ? (
                           <TableRow>
-                            <TableCell colSpan={6} align="center" sx={{ py: 6, borderBottom: 'none' }}>
+                            <TableCell colSpan={7} align="center" sx={{ py: 6, borderBottom: 'none' }}>
                               <CircularProgress color="primary" />
                             </TableCell>
                           </TableRow>
                         ) : students.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={6} align="center" sx={{ py: 6, borderBottom: 'none' }}>
+                            <TableCell colSpan={7} align="center" sx={{ py: 6, borderBottom: 'none' }}>
                               <Typography variant="body1" color="text.secondary" fontWeight={500}>
                                 {t('students.noStudentsForFilter')}
                               </Typography>
@@ -297,6 +317,9 @@ export default function AllStudentsPage() {
                               </TableCell>
                               <TableCell sx={{ fontWeight: 500, borderBottomColor: alpha(theme.palette.divider, 0.1) }}>
                                 {student.studentCode || '-'}
+                              </TableCell>
+                              <TableCell sx={{ fontWeight: 500, borderBottomColor: alpha(theme.palette.divider, 0.1) }}>
+                                {student.address || '-'}
                               </TableCell>
                               <TableCell sx={{ fontWeight: 700, color: primary, borderBottomColor: alpha(theme.palette.divider, 0.1) }}>
                                 {student.department}
@@ -359,6 +382,16 @@ export default function AllStudentsPage() {
           onClose={() => setEditingStudent(null)}
           student={editingStudent}
           onSubmit={handleEditSubmit}
+      />
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        open={isBulkImportModalOpen}
+        onClose={() => setIsBulkImportModalOpen(false)}
+        year={levelFilter}
+        department={departmentFilter}
+        academicYearName={academicYearName}
+        onSuccess={fetchStudents}
       />
     </Box>
   );
