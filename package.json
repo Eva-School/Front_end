@@ -14,7 +14,6 @@
     "start": "next start",
     "start:online": "BACKEND_API_URL=https://grade-management-api-5yn4.onrender.com/api next start",
     "build:cf": "opennextjs-cloudflare build",
-    "build:pages": "opennextjs-cloudflare build && cp .open-next/worker.js .open-next/assets/_worker.js",
     "preview": "opennextjs-cloudflare build && wrangler dev",
     "deploy": "opennextjs-cloudflare build && wrangler deploy",
     "lint": "eslint"
