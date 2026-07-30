@@ -134,8 +134,12 @@ function ClassesContent() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setLoading(true);
+        setError(null);
+      }
+    });
 
     teacherService
       .getTeacherClassesGrouped(year)

@@ -34,20 +34,22 @@ export default function EditStudentModal({ open, onClose, student, onSubmit }: E
 
     useEffect(() => {
         if (student && open) {
-            const nameParts = student.name.split(' ');
-            const fName = student.firstName || nameParts[0] || '';
-            const lName = student.lastName || nameParts.slice(1).join(' ') || '';
+            queueMicrotask(() => {
+                const nameParts = student.name.split(' ');
+                const fName = student.firstName || nameParts[0] || '';
+                const lName = student.lastName || nameParts.slice(1).join(' ') || '';
 
-            setForm({
-                firstName: fName,
-                middleName: student.middleName || '',
-                lastName: lName,
-                studentCode: student.studentCode || '',
-                email: student.email || '',
-                phone: student.phone || '',
-                address: student.address || '',
+                setForm({
+                    firstName: fName,
+                    middleName: student.middleName || '',
+                    lastName: lName,
+                    studentCode: student.studentCode || '',
+                    email: student.email || '',
+                    phone: student.phone || '',
+                    address: student.address || '',
+                });
+                setError(null);
             });
-            setError(null);
         }
     }, [student, open]);
 

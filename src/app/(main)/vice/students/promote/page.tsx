@@ -74,7 +74,9 @@ export default function PromoteStudentsPage() {
   }, [sourceLevel, sourceDept]);
 
   useEffect(() => {
-    fetchStudents();
+    queueMicrotask(() => {
+      void fetchStudents();
+    });
   }, [fetchStudents]);
 
   const handleToggleSelectAll = () => {

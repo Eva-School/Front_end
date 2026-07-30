@@ -15,14 +15,12 @@ import {
   Button,
   Alert,
   Paper,
-  useTheme,
   Chip,
   alpha,
   Container,
   Skeleton,
   InputAdornment,
   Tooltip,
-  Snackbar,
   Tabs,
   Tab,
   Dialog,
@@ -32,9 +30,7 @@ import {
   IconButton,
   Card,
   CardContent,
-  Grid,
 } from "@mui/material";
-import { motion } from "framer-motion";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import GetAppIcon from "@mui/icons-material/GetApp";
 import SearchIcon from "@mui/icons-material/Search";
@@ -49,7 +45,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
 import GradeIcon from "@mui/icons-material/Grade";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import { teacherService, Quiz, QuizDetail, StudentQuizGrade } from "@/services/teacher.service";
+import { teacherService, Quiz, QuizDetail } from "@/services/teacher.service";
 import type { TeacherStudent } from "@/types/Teacher-api/teacher-api";
 import { appToast } from "@/hooks/useAppToast";
 import { useLanguage } from "@/context/LanguageContext";
@@ -126,7 +122,6 @@ interface StudentGrades {
 }
 
 function GradeContent() {
-  const theme = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t, dir } = useLanguage();
@@ -180,13 +175,19 @@ function GradeContent() {
   // Load students for Quarter Grades
   useEffect(() => {
     if (!classId || !subjectId) {
-      setError(t("teacherModule.missingGradeContext"));
-      setLoading(false);
+      queueMicrotask(() => {
+        setError(t("teacherModule.missingGradeContext"));
+        setLoading(false);
+      });
       return;
     }
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setLoading(true);
+        setError(null);
+      }
+    });
 
     teacherService
       .getClassStudents(classId, subjectId)
@@ -219,7 +220,7 @@ function GradeContent() {
   }, [classId, subjectId, t]);
 
   // Load Quizzes
-  const fetchQuizzes = async () => {
+  const fetchQuizzes = React.useCallback(async () => {
     if (!classId || !subjectId) return;
     setLoadingQuizzes(true);
     try {
@@ -230,13 +231,15 @@ function GradeContent() {
     } finally {
       setLoadingQuizzes(false);
     }
-  };
+  }, [classId, subjectId]);
 
   useEffect(() => {
     if (activeTab === "quizzes") {
-      fetchQuizzes();
+      queueMicrotask(() => {
+        void fetchQuizzes();
+      });
     }
-  }, [activeTab, classId, subjectId]);
+  }, [activeTab, fetchQuizzes]);
 
   // Quarter Grades Logic
   const filtered = students.filter((s) => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -460,7 +463,7 @@ function GradeContent() {
     const maxScore = activeQuizDetail.quiz.maxScore;
 
     // Validate inputs
-    for (const [stId, val] of Object.entries(quizGradesInput)) {
+    for (const [, val] of Object.entries(quizGradesInput)) {
       if (val.score !== "") {
         const num = Number(val.score);
         if (isNaN(num) || num < 0) {

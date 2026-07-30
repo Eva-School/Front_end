@@ -1,6 +1,7 @@
 import { CardData } from "@/types/SharedCard";
-import BookIcon from "@/icons/book.svg";
-import fileIcon from "@/icons/file.svg";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import { StudentCardApi } from '@/types/Student-api/Student-api';
 
 const STUDENT_CARD_FALLBACKS: Record<string, { description: string; href: string }> = {
@@ -29,12 +30,18 @@ export function mapStudentCardsToSharedCards(
     // UI compatible with an API instance that has not yet been restarted.
     if (!href) return [];
 
+    const iconComponent = item.id === "quarter-grades"
+      ? MenuBookIcon
+      : item.id === "competencies"
+        ? WorkspacePremiumIcon
+        : AssignmentIcon;
+
     return [{
       id: item.id,
       title: item.title,
       description: item.description?.trim() || fallback?.description || "View your academic information.",
       href,
-      icon: item.id === "quarter-grades" ? BookIcon : fileIcon,
+      icon: iconComponent,
     }];
   });
 }

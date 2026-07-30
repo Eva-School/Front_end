@@ -10,8 +10,28 @@ interface DashboardCardProps {
   onClick: () => void;
 }
 
+const renderIcon = (iconInput: unknown) => {
+  if (!iconInput) return null;
+  if (React.isValidElement(iconInput)) return iconInput;
+
+  const Resolved = (typeof iconInput === "object" && iconInput !== null && "default" in iconInput)
+    ? (iconInput as { default: unknown }).default
+    : iconInput;
+
+  if (typeof Resolved === "function" || typeof Resolved === "string" || (typeof Resolved === "object" && Resolved !== null && "$$typeof" in Resolved)) {
+    const Component = Resolved as React.ElementType;
+    return <Component width={40} height={40} style={{ width: 40, height: 40 }} />;
+  }
+
+  if (typeof Resolved === "object" && Resolved !== null && "src" in Resolved) {
+    return <img src={(Resolved as { src: string }).src} alt="" style={{ width: 40, height: 40 }} />;
+  }
+
+  return null;
+};
+
 function DashboardCard({
-  icon: Icon,
+  icon,
   title,
   description,
   onClick,
@@ -59,7 +79,7 @@ function DashboardCard({
 
             }}
           >
-            <Icon width={40} height={40} />
+            {renderIcon(icon)}
 
           </Box>
           <Box

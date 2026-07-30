@@ -163,7 +163,11 @@ function FinalGradesDashboardContent() {
         }
     }, [level, semester, department, classFilter, subjectFilter, API]);
 
-    useEffect(() => { loadGrades(); }, [loadGrades]);
+    useEffect(() => {
+        queueMicrotask(() => {
+            void loadGrades();
+        });
+    }, [loadGrades]);
 
     const handleSave = async () => {
         setSaving(true);

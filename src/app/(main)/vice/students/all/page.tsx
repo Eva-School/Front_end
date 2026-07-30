@@ -96,7 +96,9 @@ export default function AllStudentsPage() {
   }, [academicYearName, levelFilter, departmentFilter, t]);
 
   useEffect(() => {
-    fetchStudents();
+    queueMicrotask(() => {
+      void fetchStudents();
+    });
   }, [fetchStudents]);
 
   const handleDelete = async (id: string) => {

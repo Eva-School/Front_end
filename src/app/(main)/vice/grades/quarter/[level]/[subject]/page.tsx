@@ -167,7 +167,11 @@ function QuarterSubjectGradesContent() {
         }
     }, [level, subjectId, department, classId, API, t]);
 
-    useEffect(() => { loadData(); }, [loadData]);
+    useEffect(() => {
+        queueMicrotask(() => {
+            void loadData();
+        });
+    }, [loadData]);
 
     const handleSaveMaxGrades = async () => {
         setSavingMax(true);

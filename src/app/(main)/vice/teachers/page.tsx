@@ -123,8 +123,10 @@ export default function ViceTeachersPage() {
     /* ===================== FETCH DATA ===================== */
 
     useEffect(() => {
-        setIsLoadingTeachers(true);
-        setFetchError(null);
+        queueMicrotask(() => {
+            setIsLoadingTeachers(true);
+            setFetchError(null);
+        });
         TeachersAPI.getAll()
             .then((data) => {
                 setTeachers(data);
@@ -145,7 +147,9 @@ export default function ViceTeachersPage() {
         AcademicYearsAPI.list()
             .then(setAcademicYears)
             .catch((error) => setFetchError(error instanceof Error ? error.message : t("teachers.failedLoadAcademicYears", "Failed to load academic years.")));
-        void loadAssignments();
+        queueMicrotask(() => {
+            void loadAssignments();
+        });
     }, [t, loadAssignments]);
 
 
@@ -168,18 +172,23 @@ export default function ViceTeachersPage() {
 
     useEffect(() => {
         if (!selectedYear || !selectedLevel) {
-            setSubjects([]);
-            setSelectedSubjectId("");
+            queueMicrotask(() => {
+                setSubjects([]);
+                setSelectedSubjectId("");
+            });
             return;
         }
         const editingSubjectId = editingAssignment?.yearName === selectedYear && editingAssignment.stage === selectedLevel
             ? String(editingAssignment.subjectId)
             : "";
         // A subject ID is only valid within its own academic-year and level.
-        setSubjects([]);
-        if (!editingSubjectId) setSelectedSubjectId("");
-        setIsLoadingSubjects(true);
         let requestIsCurrent = true;
+        queueMicrotask(() => {
+            if (!requestIsCurrent) return;
+            setSubjects([]);
+            if (!editingSubjectId) setSelectedSubjectId("");
+            setIsLoadingSubjects(true);
+        });
         SubjectsAPI.getByYear(selectedYear, selectedLevel)
             .then((data) => {
                 if (!requestIsCurrent) return;
@@ -206,14 +215,19 @@ export default function ViceTeachersPage() {
 
     useEffect(() => {
         if (!selectedYear || !selectedLevel) {
-            setClasses([]);
-            setSelectedClassIds([]);
+            queueMicrotask(() => {
+                setClasses([]);
+                setSelectedClassIds([]);
+            });
             return;
         }
-        setClasses([]);
-        setSelectedClassIds([]);
-        setIsLoadingClasses(true);
         let requestIsCurrent = true;
+        queueMicrotask(() => {
+            if (!requestIsCurrent) return;
+            setClasses([]);
+            setSelectedClassIds([]);
+            setIsLoadingClasses(true);
+        });
         ClassesAPI.getByYear(selectedYear, selectedLevel as "junior" | "wheeler" | "senior" | undefined)
             .then((data) => {
                 if (!requestIsCurrent) return;

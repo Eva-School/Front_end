@@ -96,7 +96,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     useEffect(() => {
-        refreshUser();
+        queueMicrotask(() => {
+            void refreshUser();
+        });
     }, []);
 
     const value: AuthContextType = {

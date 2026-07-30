@@ -135,12 +135,16 @@ export default function ViceStudentsPage() {
   }, [academicYear, level, department, t]);
 
   useEffect(() => {
-    loadClasses();
-    setSelectedClassId(null);
+    queueMicrotask(() => {
+      void loadClasses();
+      setSelectedClassId(null);
+    });
   }, [academicYear, loadClasses]);
 
   useEffect(() => {
-    loadPoolStudents();
+    queueMicrotask(() => {
+      void loadPoolStudents();
+    });
   }, [academicYear, level, department, loadPoolStudents]);
 
   /* ── Create Class ── */
