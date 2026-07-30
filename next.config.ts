@@ -7,11 +7,7 @@ if (process.env.NODE_ENV === "development") {
   initOpenNextCloudflareForDev();
 }
 
-const backendApiUrl = process.env.BACKEND_API_URL
-  ?? (process.env.NODE_ENV === "development" ? "http://localhost:5080/api" : "");
-if (!backendApiUrl) {
-  throw new Error("BACKEND_API_URL must be configured for production builds.");
-}
+const backendApiUrl = process.env.BACKEND_API_URL || "http://localhost:5080/api";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
