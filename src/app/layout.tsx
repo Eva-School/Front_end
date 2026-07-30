@@ -30,7 +30,7 @@ export default async function RootLayout({
 
   return (
     <html lang={initialLanguage} dir={dir} className={`${notoSans.variable} ${cairo.variable}`} suppressHydrationWarning>
-      <body dir={dir}>
+      <body dir={dir} suppressHydrationWarning>
         <AccessibilityScript />
         <AppProviders initialLanguage={initialLanguage} initialThemeMode={initialThemeMode}>
           <main id="main-content" tabIndex={-1}>
