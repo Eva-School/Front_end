@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import type { ElementType, ReactNode } from "react";
 
 export type CardData = {
   id: string;
-  icon: ReactNode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: ElementType | ReactNode | any;
   title: string;
   description: string;
   href: string;
