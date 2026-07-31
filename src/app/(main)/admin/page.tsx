@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { motion, type Variants, type Easing } from "framer-motion";
+import { motion, useReducedMotion, type Variants, type Easing } from "framer-motion";
 import {
   alpha,
   Box,
@@ -91,6 +91,7 @@ export default function AdminDashboardPage() {
   const theme = useTheme();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const shouldReduceMotion = useReducedMotion();
 
   const isDark = theme.palette.mode === "dark";
   const primary = theme.palette.primary.main;
@@ -101,8 +102,7 @@ export default function AdminDashboardPage() {
         minHeight: "100vh",
         position: "relative",
         overflow: "hidden",
-        mt: { xs: "-64px", md: "-80px" },
-        pt: { xs: "64px", md: "80px" },
+        py: { xs: 4, md: 6 },
         background: isDark
           ? `linear-gradient(160deg,
               ${alpha("#0f0c29", 0.97)} 0%,
@@ -244,9 +244,8 @@ export default function AdminDashboardPage() {
               <motion.div
                 key={card.id}
                 variants={cardVariants}
-                whileHover={{ y: -6, scale: 1.015 }}
+                whileHover={shouldReduceMotion ? undefined : { y: -6, scale: 1.015 }}
                 transition={{ duration: 0.2 }}
-                style={{ "@media (prefers-reduced-motion: reduce)": { transform: "none" } } as React.CSSProperties}
               >
                 <Box
                   component={Link}
@@ -290,7 +289,7 @@ export default function AdminDashboardPage() {
                   {/* Exclusive badge */}
                   {card.exclusive && (
                     <Chip
-                      label="Admin only"
+                      label={t("dashboards.adminOnly")}
                       size="small"
                       sx={{
                         position: "absolute",

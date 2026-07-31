@@ -15,7 +15,9 @@
     "somethingWentWrong": "حدث خطأ ما",
     "adminSubtitle": "تحكم كامل بالنظام والإشراف عليه",
     "adminControl": "لوحة التحكم",
+    "adminOnly": "للإدارة فقط",
     "adminCards": {
+      "exclusiveBadge": "للإدارة فقط",
       "students": {
         "title": "إدارة الطلاب",
         "description": "إضافة الطلاب وتعديلهم وترقيتهم وإدارة سجلاتهم عبر جميع المستويات."
