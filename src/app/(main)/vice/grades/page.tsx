@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Box, Container, Typography, Stack, Card, Button,
     Divider, Dialog, IconButton, alpha, Skeleton, Chip, Avatar, Alert,
+    FormControl, Select, MenuItem, InputLabel,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
@@ -19,7 +20,9 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SchoolIcon from '@mui/icons-material/School';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { API_BASE_URL, secureFetch } from '@/config/api.config';
+import { AcademicYearsAPI, AcademicYearOption } from '@/data/academic-years.api';
 import { useLanguage } from '@/context/LanguageContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -67,7 +70,7 @@ function timeAgo(dateStr: string, language: 'en' | 'ar'): string {
     }
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 86400) return `${Math.floor(diff / 86400)}h ago`;
     return `${Math.floor(diff / 86400)}d ago`;
 }
 
@@ -194,9 +197,25 @@ export default function ViceGradesDashboard() {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<DashboardData | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
+    const [selectedYear, setSelectedYear] = useState<string>('');
 
     useEffect(() => {
-        secureFetch<DashboardData>(`${API_BASE_URL}/vice/grades/dashboard`)
+        AcademicYearsAPI.list()
+            .then((years) => {
+                setAcademicYears(years);
+                const active = years.find((y) => y.isActive) || years[0];
+                if (active && !selectedYear) {
+                    setSelectedYear(active.yearName);
+                }
+            })
+            .catch(() => {});
+    }, [selectedYear]);
+
+    useEffect(() => {
+        setLoading(true);
+        const query = selectedYear ? `?academicYear=${encodeURIComponent(selectedYear)}` : '';
+        secureFetch<DashboardData>(`${API_BASE_URL}/vice/grades/dashboard${query}`)
             .then((json) => {
                 setData(json);
                 setError(null);
@@ -206,7 +225,7 @@ export default function ViceGradesDashboard() {
                 setError(requestError instanceof Error ? requestError.message : 'Unable to load dashboard data.');
             })
             .finally(() => setLoading(false));
-    }, []);
+    }, [selectedYear]);
 
     const kpiCards = [
         { icon: <PeopleAltIcon />, value: data?.totalStudents ?? 0, label: t('viceGrades.totalStudents'), color: primary },
@@ -260,37 +279,81 @@ export default function ViceGradesDashboard() {
                     initial="hidden"
                     animate="visible"
                 >
-                    {/* ── Header ── */}
+                    {/* ── Header with Academic Year Selector ── */}
                     <Box component={motion.div} variants={itemVariants} sx={{ mb: 5 }}>
-                        <Stack direction="row" alignItems="center" gap={2} mb={1}>
-                            <Box
-                                sx={{
-                                    width: 52, height: 52,
-                                    borderRadius: '16px',
-                                    background: `linear-gradient(135deg, ${primary}, ${alpha(primary, 0.6)})`,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    boxShadow: `0 8px 20px ${alpha(primary, 0.4)}`,
-                                }}
-                            >
-                                <SchoolIcon sx={{ color: '#fff', fontSize: 26 }} />
-                            </Box>
-                            <Box>
-                                <Typography
-                                    variant="h3"
-                                    fontWeight={800}
+                        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" gap={2}>
+                            <Stack direction="row" alignItems="center" gap={2}>
+                                <Box
                                     sx={{
-                                        background: `linear-gradient(45deg, ${theme.palette.text.primary}, ${primary})`,
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent',
-                                        lineHeight: 1.1,
+                                        width: 52, height: 52,
+                                        borderRadius: '16px',
+                                        background: `linear-gradient(135deg, ${primary}, ${alpha(primary, 0.6)})`,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: `0 8px 20px ${alpha(primary, 0.4)}`,
                                     }}
                                 >
-                                    {t('viceGrades.title')}
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" fontWeight={500} mt={0.5}>
-                                    {t('viceGrades.subtitle')}
-                                </Typography>
-                            </Box>
+                                    <SchoolIcon sx={{ color: '#fff', fontSize: 26 }} />
+                                </Box>
+                                <Box>
+                                    <Typography
+                                        variant="h3"
+                                        fontWeight={800}
+                                        sx={{
+                                            background: `linear-gradient(45deg, ${theme.palette.text.primary}, ${primary})`,
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                            lineHeight: 1.1,
+                                        }}
+                                    >
+                                        {t('viceGrades.title')}
+                                    </Typography>
+                                    <Typography variant="body1" color="text.secondary" fontWeight={500} mt={0.5}>
+                                        {t('viceGrades.subtitle')}
+                                    </Typography>
+                                </Box>
+                            </Stack>
+
+                            {/* Academic Year Selector */}
+                            {academicYears.length > 0 && (
+                                <FormControl
+                                    size="small"
+                                    sx={{
+                                        minWidth: 200,
+                                        backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                                        backdropFilter: 'blur(16px)',
+                                        borderRadius: '14px',
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: '14px',
+                                            fontWeight: 700,
+                                            border: `1px solid ${alpha(primary, 0.3)}`,
+                                            '&:hover fieldset': { borderColor: primary },
+                                            '&.Mui-focused fieldset': { borderColor: primary },
+                                        },
+                                    }}
+                                >
+                                    <InputLabel id="academic-year-select-label" sx={{ fontWeight: 600 }}>
+                                        {t('viceSettings.academicYear', 'Academic Year')}
+                                    </InputLabel>
+                                    <Select
+                                        labelId="academic-year-select-label"
+                                        value={selectedYear}
+                                        label={t('viceSettings.academicYear', 'Academic Year')}
+                                        onChange={(e) => setSelectedYear(e.target.value)}
+                                        startAdornment={<CalendarTodayIcon sx={{ fontSize: 18, color: primary, mr: 1 }} />}
+                                    >
+                                        {academicYears.map((item) => (
+                                            <MenuItem key={item.yearName} value={item.yearName} sx={{ fontWeight: item.isActive ? 800 : 500 }}>
+                                                <Stack direction="row" alignItems="center" justifyContent="space-between" width="100%">
+                                                    <span>{item.yearName.replace('-', ' – ')}</span>
+                                                    {item.isActive && (
+                                                        <Chip label={t('common.active', 'Active')} size="small" color="primary" sx={{ height: 20, fontSize: '0.65rem', ml: 1 }} />
+                                                    )}
+                                                </Stack>
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            )}
                         </Stack>
                     </Box>
 
