@@ -19,6 +19,7 @@ const renderIcon = (iconInput: unknown) => {
   }
 
   if (typeof Resolved === "object" && Resolved !== null && "src" in Resolved) {
+    // eslint-disable-next-line @next/next/no-img-element
     return <img src={(Resolved as { src: string }).src} alt="" style={{ width: 40, height: 40 }} />;
   }
 

@@ -213,18 +213,30 @@ export default function ViceGradesDashboard() {
     }, [selectedYear]);
 
     useEffect(() => {
-        setLoading(true);
+        let isMounted = true;
         const query = selectedYear ? `?academicYear=${encodeURIComponent(selectedYear)}` : '';
         secureFetch<DashboardData>(`${API_BASE_URL}/vice/grades/dashboard${query}`)
             .then((json) => {
-                setData(json);
-                setError(null);
+                if (isMounted) {
+                    setData(json);
+                    setError(null);
+                }
             })
             .catch((requestError: unknown) => {
-                setData(null);
-                setError(requestError instanceof Error ? requestError.message : 'Unable to load dashboard data.');
+                if (isMounted) {
+                    setData(null);
+                    setError(requestError instanceof Error ? requestError.message : 'Unable to load dashboard data.');
+                }
             })
-            .finally(() => setLoading(false));
+            .finally(() => {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
     }, [selectedYear]);
 
     const kpiCards = [
@@ -338,7 +350,10 @@ export default function ViceGradesDashboard() {
                                         labelId="academic-year-select-label"
                                         value={selectedYear}
                                         label={t('viceSettings.academicYear', 'Academic Year')}
-                                        onChange={(e) => setSelectedYear(e.target.value)}
+                                        onChange={(e) => {
+                                            setLoading(true);
+                                            setSelectedYear(e.target.value);
+                                        }}
                                         startAdornment={<CalendarTodayIcon sx={{ fontSize: 18, color: primary, mr: 1 }} />}
                                     >
                                         {academicYears.map((item) => (
