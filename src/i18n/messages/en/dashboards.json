@@ -1,7 +1,7 @@
 {
   "dashboards": {
-  "student": "Student",
-  "welcome": "Welcome, {name}",
+    "student": "Student",
+    "welcome": "Welcome, {name}",
     "teacher": "Teacher",
     "vice": "Student Affairs",
     "admin": "Admin Dashboard",
@@ -12,6 +12,36 @@
     "noAssignedClasses": "No classes assigned yet.",
     "noAssignedYears": "No academic years are assigned to your account yet.",
     "failedLoadYears": "Failed to load assigned academic years.",
-    "somethingWentWrong": "Something went wrong"
+    "somethingWentWrong": "Something went wrong",
+    "adminSubtitle": "Full system control and oversight",
+    "adminControl": "Control Panel",
+    "adminOnly": "Admin only",
+    "adminCards": {
+      "exclusiveBadge": "Admin only",
+      "students": {
+        "title": "Student Management",
+        "description": "Add, edit, promote, and manage all student records across all levels."
+      },
+      "teachers": {
+        "title": "Teacher Management",
+        "description": "Register teachers, manage assignments, and oversee faculty records."
+      },
+      "quarterGrades": {
+        "title": "Quarter Grades",
+        "description": "View and oversee quarterly grade entries across all subjects and classes."
+      },
+      "finalGrades": {
+        "title": "Final Grades",
+        "description": "Review submitted final grades and approve them for all levels."
+      },
+      "settings": {
+        "title": "Academic Year Settings",
+        "description": "Create new academic years, configure terms, and manage level mappings."
+      },
+      "rankings": {
+        "title": "Rankings & Analytics",
+        "description": "View student performance rankings and academic analytics across the system."
+      }
+    }
   }
 }
