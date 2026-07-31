@@ -214,25 +214,30 @@ export default function ViceGradesDashboard() {
 
     useEffect(() => {
         let isMounted = true;
-        const query = selectedYear ? `?academicYear=${encodeURIComponent(selectedYear)}` : '';
-        secureFetch<DashboardData>(`${API_BASE_URL}/vice/grades/dashboard${query}`)
-            .then((json) => {
+        const fetchData = async () => {
+            if (isMounted) {
+                setLoading(true);
+                setError(null);
+            }
+            const query = selectedYear ? `?academicYear=${encodeURIComponent(selectedYear)}` : '';
+            try {
+                const json = await secureFetch<DashboardData>(`${API_BASE_URL}/vice/grades/dashboard${query}`);
                 if (isMounted) {
                     setData(json);
                     setError(null);
                 }
-            })
-            .catch((requestError: unknown) => {
+            } catch (requestError: unknown) {
                 if (isMounted) {
                     setData(null);
                     setError(requestError instanceof Error ? requestError.message : 'Unable to load dashboard data.');
                 }
-            })
-            .finally(() => {
+            } finally {
                 if (isMounted) {
                     setLoading(false);
                 }
-            });
+            }
+        };
+        fetchData();
 
         return () => {
             isMounted = false;
