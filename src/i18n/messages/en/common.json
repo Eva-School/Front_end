@@ -22,6 +22,16 @@
     "rankings": "Rankings",
     "analytics": "Analytics",
     "login": "Login",
-    "settings": "Settings"
+    "settings": "Settings",
+    "validations": {
+      "required": "This field is required.",
+      "invalidEmail": "Please enter a valid email address.",
+      "invalidPhone": "Please enter a valid phone number.",
+      "tooShort": "Value is too short.",
+      "tooLong": "Value is too long.",
+      "networkError": "Network error. Please check your internet connection.",
+      "serverError": "Server error. Please try again later.",
+      "unauthorized": "You are not authorized to perform this action."
+    }
   }
 }

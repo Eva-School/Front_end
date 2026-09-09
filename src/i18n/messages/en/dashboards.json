@@ -41,6 +41,10 @@
       "rankings": {
         "title": "Rankings & Analytics",
         "description": "View student performance rankings and academic analytics across the system."
+      },
+      "accounts": {
+        "title": "Account Management",
+        "description": "Oversee system user accounts, roles, access permissions, and security credentials."
       }
     }
   }

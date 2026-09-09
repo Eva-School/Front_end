@@ -15,7 +15,7 @@ This file contains comprehensive documentation for all API Endpoints required in
 **Request Body:**
 ```json
 {
-  "username": "string",
+  "email": "admin@system.com",
   "password": "string"
 }
 ```
@@ -25,14 +25,14 @@ This file contains comprehensive documentation for all API Endpoints required in
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "role": "Admin" | "Teacher" | "Student"
+  "role": "Admin" | "Teacher" | "Student" | "StudentAffairs"
 }
 ```
 
 **Response (Error - 401):**
 ```json
 {
-  "message": "Invalid username or password"
+  "message": "Invalid email or password"
 }
 ```
 

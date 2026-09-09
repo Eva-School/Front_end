@@ -1,6 +1,6 @@
 import { LoginPayload } from "@/types/login";
 
 export const initialLoginData: LoginPayload = {
-    username: "",
+    email: "",
     password: "",
 };

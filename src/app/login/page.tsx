@@ -54,8 +54,9 @@ const LoginPage = () => {
     const { mode, toggleMode } = useThemeMode();
 
     const [currentImage, setCurrentImage] = useState(0);
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // ===== carousel =====
@@ -78,42 +79,58 @@ const LoginPage = () => {
     const handleLogin = async () => {
         setError(null);
 
-        const sanitizedUsername = username.trim();
-        const sanitizedPassword = password.trim();
+        const sanitizedEmail = email.trim();
+        const rawPassword = password; // Do not trim password
 
-        if (!sanitizedUsername) {
-            setError(t("auth.usernameRequired"));
+        if (!sanitizedEmail) {
+            setError(t("auth.emailRequired"));
             return;
         }
 
-        if (!sanitizedPassword) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(sanitizedEmail)) {
+            setError(t("auth.invalidEmail"));
+            return;
+        }
+
+        if (sanitizedEmail.length > 256) {
+            setError(t("auth.emailTooLong"));
+            return;
+        }
+
+        if (!rawPassword) {
             setError(t("auth.passwordRequired"));
             return;
         }
 
-        if (sanitizedUsername.length > 100) {
-            setError(t("auth.usernameTooLong"));
-            return;
-        }
-
-        if (sanitizedPassword.length > 200) {
+        if (rawPassword.length > 200) {
             setError(t("auth.passwordTooLong"));
             return;
         }
 
-        const sanitizeInput = (input: string) => {
-            return input.replace(/[<>\"']/g, "");
-        };
-
+        setIsSubmitting(true);
         try {
             const loggedUser = await login(
-                sanitizeInput(sanitizedUsername),
-                sanitizedPassword
+                sanitizedEmail,
+                rawPassword
             );
             const redirectPath = getRedirectPathByRole(loggedUser.role);
             router.replace(redirectPath);
-        } catch {
-            setError(t("auth.invalidCredentials"));
+        } catch (err: unknown) {
+            const code = err instanceof Error ? err.message : "";
+            if (code === "NETWORK_ERROR") {
+                setError(t("auth.networkError"));
+            } else if (code === "SERVER_ERROR") {
+                setError(t("auth.serverError"));
+            } else if (code === "RATE_LIMITED") {
+                setError(t("auth.rateLimited"));
+            } else if (code === "INVALID_REQUEST") {
+                setError(t("auth.invalidRequest"));
+            } else {
+                setError(t("auth.invalidCredentials"));
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -290,9 +307,13 @@ const LoginPage = () => {
                         <Box component="form" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
                           <TextField
                               fullWidth
-                              label={t("auth.username")}
-                              value={username}
-                              onChange={(e) => setUsername(e.target.value)}
+                              id="login-email-input"
+                              label={t("auth.email")}
+                              type="email"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              placeholder={t("auth.emailPlaceholder")}
+                              disabled={isSubmitting || loading}
                               sx={{ 
                                   mb: 3,
                                   "& .MuiOutlinedInput-root": {
@@ -304,15 +325,22 @@ const LoginPage = () => {
                                   }
                               }}
                               autoComplete="username"
-                              inputProps={{ maxLength: 100 }}
+                              inputProps={{
+                                  maxLength: 256,
+                                  autoCapitalize: "none",
+                                  autoCorrect: "off",
+                                  spellCheck: "false"
+                              }}
                           />
 
                           <TextField
                               fullWidth
+                              id="login-password-input"
                               label={t("auth.password")}
                               type="password"
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
+                              disabled={isSubmitting || loading}
                               sx={{ 
                                   mb: 2,
                                   "& .MuiOutlinedInput-root": {
@@ -345,7 +373,7 @@ const LoginPage = () => {
                           <Button
                               type="submit"
                               fullWidth
-                              disabled={loading}
+                              disabled={isSubmitting || loading}
                               component={motion.button}
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
@@ -363,7 +391,7 @@ const LoginPage = () => {
                               }}
                           >
                               <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-                                  {loading ? t("auth.signingIn") : t("auth.signIn")}
+                                  {isSubmitting || loading ? t("auth.signingIn") : t("auth.signIn")}
                               </Typography>
                           </Button>
                         </Box>

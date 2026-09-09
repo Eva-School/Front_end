@@ -49,16 +49,23 @@ const getErrorMessage = async (res: Response): Promise<string> => {
       | { message?: string; title?: string; errors?: Record<string, string[]> }
       | null;
 
+    if (errorData?.errors && typeof errorData.errors === "object") {
+      const validationMessages = Object.entries(errorData.errors)
+        .map(([field, msgs]) => {
+          const joined = Array.isArray(msgs) ? msgs.filter(Boolean).join(", ") : String(msgs);
+          return joined ? `${field}: ${joined}` : null;
+        })
+        .filter(Boolean)
+        .join(" | ");
+      if (validationMessages) {
+        return `${validationMessages} (HTTP ${res.status})`;
+      }
+    }
+
     if (typeof errorData?.message === "string" && errorData.message.trim()) {
       errorMessage = errorData.message;
     } else if (typeof errorData?.title === "string" && errorData.title.trim()) {
       errorMessage = errorData.title;
-    } else if (errorData?.errors && typeof errorData.errors === "object") {
-      const validationMessages = Object.values(errorData.errors)
-        .flat()
-        .filter(Boolean)
-        .join(" | ");
-      if (validationMessages) errorMessage = validationMessages;
     }
   } catch {
     // Keep fallback message.

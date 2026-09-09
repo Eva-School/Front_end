@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
   turbopack: {},
   // Permit development access from this local-network address without opening
   // the dev server to arbitrary origins.
-  allowedDevOrigins: ["192.168.1.10"],
+  allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.1.10"],
   async rewrites() {
     return [
       {

@@ -19,7 +19,7 @@ const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "/backend-api").replace
 
 
 export interface LoginPayload {
-    username: string;
+    email: string;
     password: string;
 }
 
@@ -50,16 +50,35 @@ export interface RefreshTokenResponse {
  * Login and store tokens
  */
 async function login(payload: LoginPayload): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/Auth/login`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-    });
+    const trimmedEmail = payload.email.trim();
+
+    let response: Response;
+    try {
+        response = await fetch(`${API_BASE_URL}/Auth/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                email: trimmedEmail,
+                password: payload.password,
+            }),
+        });
+    } catch {
+        throw new Error("NETWORK_ERROR");
+    }
 
     if (!response.ok) {
-        throw new Error("Invalid username or password");
+        if (response.status === 400) {
+            throw new Error("INVALID_REQUEST");
+        } else if (response.status === 401) {
+            throw new Error("INVALID_CREDENTIALS");
+        } else if (response.status === 429) {
+            throw new Error("RATE_LIMITED");
+        } else if (response.status >= 500) {
+            throw new Error("SERVER_ERROR");
+        }
+        throw new Error("INVALID_CREDENTIALS");
     }
 
     const raw = (await response.json()) as {

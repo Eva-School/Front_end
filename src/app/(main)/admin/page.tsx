@@ -9,6 +9,7 @@ import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import BarChartIcon from "@mui/icons-material/BarChart";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 
 import DashboardHeader from "@/components/shared/DashboardHeader-bg";
 import SharedCard from "@/components/shared/SharedCard";
@@ -23,6 +24,11 @@ interface AdminCardDefinition {
 }
 
 const ADMIN_CARD_DEFINITIONS: AdminCardDefinition[] = [
+  {
+    id: "accounts",
+    href: "/admin/accounts",
+    icon: ManageAccountsIcon,
+  },
   {
     id: "students",
     href: "/vice/students",
