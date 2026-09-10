@@ -3,7 +3,7 @@ import { tokenStorage } from "@/utils/token-storage";
 import { authService } from "./auth.service";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "/backend-api",
   // Token-based auth; avoid cross-site cookies/CORS issues.
   withCredentials: false,
 });

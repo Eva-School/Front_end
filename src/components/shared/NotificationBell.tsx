@@ -18,7 +18,7 @@ import GradeIcon from "@mui/icons-material/Grade";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import InfoIcon from "@mui/icons-material/Info";
 import AlarmIcon from "@mui/icons-material/Alarm";
-import { secureFetch } from "@/config/api.config";
+import { API_BASE_URL, secureFetch } from "@/config/api.config";
 import { useLocale, useTranslations } from "next-intl";
 
 interface Notification {
@@ -67,32 +67,34 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = () => {
-    setLoading(true);
-    secureFetch<NotificationsResponse>("/api/notifications")
+  const fetchNotifications = (silent = false) => {
+    if (!silent) setLoading(true);
+    secureFetch<NotificationsResponse>(`${API_BASE_URL}/notifications`)
       .then((data) => {
         setNotifications(data.notifications ?? []);
         setUnread(data.unreadCount ?? 0);
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!silent) setLoading(false);
+      });
   };
 
   useEffect(() => {
-    queueMicrotask(fetchNotifications);
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchNotifications, 60000);
+    queueMicrotask(() => fetchNotifications(false));
+    // Refresh every 60 seconds silently in the background
+    const interval = setInterval(() => fetchNotifications(true), 60000);
     return () => clearInterval(interval);
   }, []);
 
   const markAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnread(0);
-    secureFetch("/api/notifications", {
+    secureFetch(`${API_BASE_URL}/notifications`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ markAllRead: true }),
-    }).catch(fetchNotifications);
+    }).catch(() => fetchNotifications(true));
   };
 
   const markRead = (id: string) => {
@@ -100,7 +102,7 @@ export default function NotificationBell() {
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
     setUnread((prev) => Math.max(0, prev - 1));
-    secureFetch("/api/notifications", {
+    secureFetch(`${API_BASE_URL}/notifications`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, read: true }),

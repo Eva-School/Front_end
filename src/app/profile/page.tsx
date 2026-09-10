@@ -12,6 +12,7 @@ import {
     DialogContent,
     TextField,
     Alert,
+    Skeleton,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -27,6 +28,7 @@ const TeacherProfilePage = () => {
     const [open, setOpen] = useState(false);
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
 
     useEffect(() => {
         if (!isAuthenticated || !user) return;
@@ -52,16 +54,12 @@ const TeacherProfilePage = () => {
             .catch(() => {
                 if (!isMounted) return;
                 setError("Failed to load profile data from server.");
-            })
-            .finally(() => {
-                if (!isMounted) return;
-                // no-op (loading state removed to satisfy lint rule)
             });
 
         return () => {
             isMounted = false;
         };
-    }, [isAuthenticated, user]);
+    }, [isAuthenticated, user, retryCount]);
 
     if (authLoading) {
         return (
@@ -101,7 +99,7 @@ const TeacherProfilePage = () => {
         );
     }
 
-    if (error || !profile) {
+    if (error) {
         return (
             <>
                 <SharedNavbar />
@@ -111,11 +109,80 @@ const TeacherProfilePage = () => {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        p: 2,
                     }}
                 >
-                    <Typography variant="h2">
-                        {error || "Profile not available"}
-                    </Typography>
+                    <Card
+                        sx={{
+                            width: "clamp(340px, 40vw, 500px)",
+                            borderRadius: "20px",
+                            p: 4,
+                            textAlign: "center",
+                            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                        }}
+                    >
+                        <Alert severity="error" sx={{ mb: 3 }}>
+                            {error}
+                        </Alert>
+                        <Button
+                            variant="contained"
+                            onClick={() => {
+                                setError(null);
+                                setProfile(null);
+                                setRetryCount((c) => c + 1);
+                            }}
+                            sx={{ borderRadius: "12px", px: 4, py: 1.5 }}
+                        >
+                            Try Again
+                        </Button>
+                    </Card>
+                </Box>
+            </>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <>
+                <SharedNavbar />
+                <Box
+                    sx={{
+                        minHeight: "100vh",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        p: 2,
+                    }}
+                >
+                    <Card
+                        sx={{
+                            width: "clamp(340px, 40vw, 620px)",
+                            borderRadius: "24px",
+                            p: "32px",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 2,
+                        }}
+                    >
+                        <Skeleton variant="circular" width={96} height={96} />
+                        <Skeleton variant="text" width={200} height={32} />
+                        <Skeleton variant="text" width={140} height={20} />
+                        <Divider sx={{ width: "100%", my: 2 }} />
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr 1fr",
+                                gap: 3,
+                                width: "100%",
+                            }}
+                        >
+                            <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 2 }} />
+                            <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 2 }} />
+                            <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 2 }} />
+                            <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 2 }} />
+                        </Box>
+                    </Card>
                 </Box>
             </>
         );

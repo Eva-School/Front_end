@@ -213,9 +213,9 @@ export default function SharedNavbar() {
 
                     {/* Right */}
                     <Stack direction="row" alignItems="center" spacing={1.5}>
-                        {/* Notification Bell — desktop */}
+                        {/* Notification Bell */}
                         {user && (
-                            <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <NotificationBell />
                             </Box>
                         )}
