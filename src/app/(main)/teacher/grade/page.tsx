@@ -993,7 +993,7 @@ function GradeContent() {
                     type="number"
                     required
                     fullWidth
-                    inputProps={{ min: 0.1, step: 0.5 }}
+                    inputProps={{ min: 0.5, step: "any" }}
                     value={quizForm.maxScore}
                     onChange={(e) => setQuizForm({ ...quizForm, maxScore: e.target.value })}
                   />
@@ -1116,7 +1116,7 @@ function GradeContent() {
                                 inputProps={{
                                   min: 0,
                                   max: activeQuizDetail.quiz.maxScore,
-                                  step: 0.5,
+                                  step: "any",
                                   style: { textAlign: "center" },
                                 }}
                                 sx={{ width: 90 }}
