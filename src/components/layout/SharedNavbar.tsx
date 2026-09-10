@@ -89,6 +89,7 @@ export default function SharedNavbar() {
         if (user.role === "StudentAffairs") {
             return [
                 { href: "/vice", label: t("common.home") },
+                { href: "/classes", label: t("common.classes") },
                 { href: "/analytics", label: t("common.analytics") },
                 { href: "/rankings", label: t("common.rankings") },
                 { href: "/about", label: t("common.about") },
@@ -98,6 +99,7 @@ export default function SharedNavbar() {
         // Admin or others
         return [
             { href: "/admin", label: t("common.home") },
+            { href: "/classes", label: t("common.classes") },
             { href: "/analytics", label: t("common.analytics") },
             { href: "/rankings", label: t("common.rankings") },
             { href: "/about", label: t("common.about") },

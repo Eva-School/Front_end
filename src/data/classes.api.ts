@@ -1,19 +1,47 @@
 import { API_BASE_URL, secureFetch } from "@/config/api.config";
-import { Class } from "@/types/subject.types";
-import type { CreateClassPayload, ViceLevel } from "@/types/vice/students";
+import type {
+  ClassCohortSummary,
+  ClassDetails,
+  ClassItem,
+  CreateClassPayload,
+  UpdateClassPayload,
+} from "@/types/class-management.types";
+import type { ViceLevel } from "@/types/vice/students";
 
 export const ClassesAPI = {
-  getByYear(yearId: string, stage?: ViceLevel): Promise<Class[]> {
-    // Sanitize yearId to prevent URL injection
-    const sanitizedYearId = encodeURIComponent(yearId);
-    const stageQuery = stage ? `&stage=${encodeURIComponent(stage)}` : "";
-    return secureFetch(`${API_BASE_URL}/classes?yearId=${sanitizedYearId}${stageQuery}`) as Promise<Class[]>;
+  getCohortsSummary(): Promise<ClassCohortSummary[]> {
+    return secureFetch(`${API_BASE_URL}/classes/cohorts-summary`) as Promise<ClassCohortSummary[]>;
   },
 
-  create(payload: CreateClassPayload): Promise<Class> {
+  getByYear(yearId?: string, stage?: ViceLevel | string): Promise<ClassItem[]> {
+    const params = new URLSearchParams();
+    if (yearId) params.set("yearId", yearId);
+    if (stage) params.set("stage", stage);
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+    return secureFetch(`${API_BASE_URL}/classes${queryString}`) as Promise<ClassItem[]>;
+  },
+
+  getDetails(classId: number): Promise<ClassDetails> {
+    return secureFetch(`${API_BASE_URL}/classes/${classId}/details`) as Promise<ClassDetails>;
+  },
+
+  create(payload: CreateClassPayload): Promise<ClassItem> {
     return secureFetch(`${API_BASE_URL}/classes`, {
       method: "POST",
       body: JSON.stringify(payload),
-    }) as Promise<Class>;
+    }) as Promise<ClassItem>;
+  },
+
+  update(classId: number, payload: UpdateClassPayload): Promise<ClassItem> {
+    return secureFetch(`${API_BASE_URL}/classes/${classId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }) as Promise<ClassItem>;
+  },
+
+  delete(classId: number): Promise<{ message: string }> {
+    return secureFetch(`${API_BASE_URL}/classes/${classId}`, {
+      method: "DELETE",
+    }) as Promise<{ message: string }>;
   },
 };

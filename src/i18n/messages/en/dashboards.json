@@ -18,6 +18,10 @@
     "adminOnly": "Admin only",
     "adminCards": {
       "exclusiveBadge": "Admin only",
+      "classes": {
+        "title": "Class Management",
+        "description": "Manage batches, classes, capacities, rosters, and teacher assignments."
+      },
       "students": {
         "title": "Student Management",
         "description": "Add, edit, promote, and manage all student records across all levels."

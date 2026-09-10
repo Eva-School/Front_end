@@ -63,11 +63,17 @@ export function LanguageProvider({
   initialLanguage: AppLanguage;
   children: React.ReactNode;
 }) {
-  const [language, setLanguageState] = useState<AppLanguage>(() => {
-    if (typeof window === "undefined") return initialLanguage;
+  const [language, setLanguageState] = useState<AppLanguage>(initialLanguage);
+
+  useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return isAppLocale(saved) ? saved : initialLanguage;
-  });
+    if (isAppLocale(saved) && saved !== initialLanguage) {
+      setLanguageState(saved);
+      document.cookie = `${COOKIE_KEY}=${saved}; path=/; max-age=31536000; samesite=lax`;
+      document.documentElement.lang = saved;
+      document.documentElement.dir = saved === "ar" ? "rtl" : "ltr";
+    }
+  }, [initialLanguage]);
 
   const setLanguage = useCallback((lang: AppLanguage) => {
     setLanguageState(lang);

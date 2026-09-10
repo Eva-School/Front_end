@@ -39,7 +39,16 @@ export function ThemeModeProvider({
   children: React.ReactNode;
 }) {
   const { language } = useLanguage();
-  const [mode, setModeState] = useState<ThemeMode>(() => resolveInitialMode(initialMode));
+  const [mode, setModeState] = useState<ThemeMode>(initialMode);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    const validSaved = saved === "light" || saved === "dark" ? saved : null;
+    const preferred = validSaved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    if (preferred !== initialMode) {
+      setModeState(preferred);
+    }
+  }, [initialMode]);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, mode);

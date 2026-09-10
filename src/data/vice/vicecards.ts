@@ -19,4 +19,10 @@ export const viceCardsApi: ViceCardApi[] = [
     description: "Manage quarter and final grades setup.",
     route: "/vice/grades",
   },
+  {
+    id: 5,
+    title: "Class Management",
+    description: "Manage cohorts, classes, capacities, rosters, and teacher assignments.",
+    route: "/classes",
+  },
 ];

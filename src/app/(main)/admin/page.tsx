@@ -10,6 +10,7 @@ import FactCheckIcon from "@mui/icons-material/FactCheck";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import SchoolIcon from "@mui/icons-material/School";
 
 import DashboardHeader from "@/components/shared/DashboardHeader-bg";
 import SharedCard from "@/components/shared/SharedCard";
@@ -28,6 +29,11 @@ const ADMIN_CARD_DEFINITIONS: AdminCardDefinition[] = [
     id: "accounts",
     href: "/admin/accounts",
     icon: ManageAccountsIcon,
+  },
+  {
+    id: "classes",
+    href: "/classes",
+    icon: SchoolIcon,
   },
   {
     id: "students",

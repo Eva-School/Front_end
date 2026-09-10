@@ -15,6 +15,10 @@
     "4": {
       "title": "Academic Year Settings",
       "description": "Create academic years and choose what to carry forward."
+    },
+    "5": {
+      "title": "Class Management",
+      "description": "Manage cohorts, classes, capacities, rosters, and teacher assignments."
     }
   }
 }
