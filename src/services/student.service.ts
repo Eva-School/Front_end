@@ -3,9 +3,10 @@
  * ==============
  * Student Role API abstraction.
  *
- * - Fetches student dashboard cards (and profile when needed)
- * - Grades by academic year (quarter, final, jadarat)
- * - Uses same base URL and credentials as auth
+ * - Fetches student dashboard cards, full profile, and enrollment
+ * - Grades by academic year (quarter with quizzes, final with GPA, jadarat with attempts)
+ * - Profile contact updates
+ * - Uses secureFetch connected to real backend endpoints
  */
 
 import { StudentCardApi } from "@/types/Student-api/Student-api";
@@ -15,6 +16,9 @@ import type {
   QuarterGradesResponse,
   FinalGradesResponse,
   JadaratGradesResponse,
+  StudentProfileData,
+  UpdateStudentContactData,
+  StudentEnrollmentDetails,
 } from "@/types/Student-api/grades";
 import { API_BASE_URL, secureFetch } from "@/config/api.config";
 
@@ -25,86 +29,147 @@ const getList = <T>(value: ListEnvelope<T>, key: "cards" | "years" | "grades"): 
   return value[key] ?? value.data ?? [];
 };
 
-export interface StudentProfileResponse {
-  name: string;
-  year?: string;
-  subtitle?: string;
-  /** Current academic year (e.g. "senior"). Used as default until user selects from Years page. */
-  currentAcademicYear?: StudentYearKey;
-}
-
 /**
  * Fetch student dashboard cards from API.
- * Used on /student page to render dynamic cards (Quarter, Final, Competencies, etc.)
  */
 export async function getStudentCards(): Promise<StudentCardApi[]> {
-  const data = await secureFetch(`${API_BASE_URL}/student/cards`) as ListEnvelope<StudentCardApi>;
+  const data = (await secureFetch(`${API_BASE_URL}/student/cards`)) as ListEnvelope<StudentCardApi>;
   return getList(data, "cards");
 }
 
 /**
- * Fetch current student profile (name, year) for dashboard header.
- * Optional: backend can provide this from /auth/me or a dedicated endpoint.
+ * Fetch current student profile details (name, code, national ID, class, GPA, etc.).
  */
-export async function getStudentProfile(): Promise<StudentProfileResponse> {
-  return secureFetch(`${API_BASE_URL}/student/profile`) as Promise<StudentProfileResponse>;
+export async function getStudentProfile(): Promise<StudentProfileData> {
+  return secureFetch(`${API_BASE_URL}/student/profile`) as Promise<StudentProfileData>;
 }
 
 /**
- * Fetch list of academic years (Junior, Wheeler, Senior) for Years page.
+ * Update student contact information (phone, address, relative contact).
+ */
+export async function updateStudentProfile(
+  payload: UpdateStudentContactData
+): Promise<StudentProfileData> {
+  return secureFetch(`${API_BASE_URL}/student/profile`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }) as Promise<StudentProfileData>;
+}
+
+/**
+ * Fetch list of academic years (Junior, Wheeler, Senior).
  */
 export async function getStudentYears(): Promise<YearOption[]> {
-  const data = await secureFetch(`${API_BASE_URL}/student/years`) as ListEnvelope<YearOption>;
+  const data = (await secureFetch(`${API_BASE_URL}/student/years`)) as ListEnvelope<YearOption>;
   return getList(data, "years");
 }
 
 /**
- * Fetch quarter grades for a given academic year.
+ * Fetch quarter grades and quiz breakdowns for a given academic year and optional term.
  */
-export async function getQuarterGrades(year: StudentYearKey): Promise<QuarterGradesResponse> {
-  const data = await secureFetch(
-    `${API_BASE_URL}/student/grades/quarter?year=${encodeURIComponent(year)}`
-  ) as Partial<QuarterGradesResponse> & ListEnvelope<QuarterGradesResponse["grades"][number]>;
+export async function getQuarterGrades(
+  year: StudentYearKey,
+  termId?: number
+): Promise<QuarterGradesResponse> {
+  const url = new URL(`${API_BASE_URL}/student/grades/quarter`);
+  url.searchParams.set("year", year);
+  if (termId !== undefined) {
+    url.searchParams.set("termId", termId.toString());
+  }
+
+  const data = (await secureFetch(url.toString())) as QuarterGradesResponse &
+    ListEnvelope<QuarterGradesResponse["grades"][number]>;
+
+  const gradesList = Array.isArray(data) ? data : data.grades ?? (data as any).data ?? [];
+  const averageCalc =
+    gradesList.length > 0
+      ? (
+          gradesList.reduce((sum, g) => sum + (g.percentage ?? g.yourGrade ?? 0), 0) /
+          gradesList.length
+        ).toFixed(1) + "%"
+      : "—";
+
   return {
-    grades: Array.isArray(data) ? data : data.grades ?? data.data ?? [],
-    averageGrade: data.averageGrade ?? "—",
+    grades: gradesList,
     year: data.year ?? year,
+    academicYearName: data.academicYearName,
+    availableTerms: data.availableTerms ?? [1, 2],
+    selectedTerm: data.selectedTerm ?? termId ?? 1,
+    averageGrade: data.averageGrade ?? averageCalc,
   };
 }
 
 /**
- * Fetch final grades for a given academic year.
+ * Fetch final grades, GPA, standing, and subject transcripts.
  */
 export async function getFinalGrades(year: StudentYearKey): Promise<FinalGradesResponse> {
-  const data = await secureFetch(
+  const data = (await secureFetch(
     `${API_BASE_URL}/student/grades/final?year=${encodeURIComponent(year)}`
-  ) as Partial<FinalGradesResponse> & ListEnvelope<FinalGradesResponse["grades"][number]>;
+  )) as FinalGradesResponse & ListEnvelope<FinalGradesResponse["grades"][number]>;
+
+  const gradesList = Array.isArray(data) ? data : data.grades ?? (data as any).data ?? [];
+  const avg =
+    gradesList.length > 0
+      ? (
+          gradesList.reduce((sum, g) => sum + (g.percentage ?? g.totalScore ?? 0), 0) /
+          gradesList.length
+        ).toFixed(1) + "%"
+      : "—";
+
   return {
-    grades: Array.isArray(data) ? data : data.grades ?? data.data ?? [],
-    averageGrade: data.averageGrade ?? "—",
+    grades: gradesList,
     year: data.year ?? year,
+    academicYearName: data.academicYearName,
+    termGpa: data.termGpa,
+    cumulativeAverage: data.cumulativeAverage,
+    totalCredits: data.totalCredits,
+    standing: data.standing ?? "Good Standing",
+    averageGrade: data.averageGrade ?? avg,
   };
 }
 
 /**
- * Fetch competencies (jadarat) grades for a given academic year.
+ * Fetch competencies (jadarat) grades, evaluation status, and attempt history.
  */
 export async function getJadaratGrades(year: StudentYearKey): Promise<JadaratGradesResponse> {
-  const data = await secureFetch(
+  const data = (await secureFetch(
     `${API_BASE_URL}/student/grades/jadarat?year=${encodeURIComponent(year)}`
-  ) as Partial<JadaratGradesResponse> & ListEnvelope<JadaratGradesResponse["grades"][number]>;
+  )) as JadaratGradesResponse & ListEnvelope<JadaratGradesResponse["grades"][number]>;
+
+  const gradesList = Array.isArray(data) ? data : data.grades ?? (data as any).data ?? [];
+
   return {
-    grades: Array.isArray(data) ? data : data.grades ?? data.data ?? [],
-    averageGrade: data.averageGrade,
+    grades: gradesList,
     year: data.year ?? year,
+    academicYearName: data.academicYearName,
+    totalCompetencies: data.totalCompetencies ?? gradesList.length,
+    passedCompetencies:
+      data.passedCompetencies ??
+      gradesList.filter(
+        (g) =>
+          g.currentStatus?.toLowerCase().includes("pass") ||
+          g.Your_Attemps?.toLowerCase().includes("pass")
+      ).length,
+    pendingCompetencies: data.pendingCompetencies ?? 0,
+    averageGrade: data.averageGrade,
   };
+}
+
+/**
+ * Fetch student class enrollment, assigned teachers, and schedule overview.
+ */
+export async function getStudentEnrollment(): Promise<StudentEnrollmentDetails> {
+  return secureFetch(`${API_BASE_URL}/student/enrollment`) as Promise<StudentEnrollmentDetails>;
 }
 
 export const studentService = {
   getStudentCards,
   getStudentProfile,
+  updateStudentProfile,
   getStudentYears,
   getQuarterGrades,
   getFinalGrades,
   getJadaratGrades,
+  getStudentEnrollment,
 };

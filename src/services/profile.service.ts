@@ -20,7 +20,7 @@ export interface ProfileResponse extends ProfileData {
  * Profile service
  * ===============
  * Responsible for fetching the currently authenticated user's profile
- * and enriching it with role-specific domain details (e.g. Teacher subject / Academic year).
+ * and enriching it with role-specific domain details (Teacher subject or Student academic/contact info).
  */
 export const profileService = {
   /**
@@ -32,6 +32,7 @@ export const profileService = {
 
     let subject: string | undefined = undefined;
     let academicYear = "Not assigned";
+    let studentDetails: Partial<ProfileData> = {};
 
     const normalizedRole = userMe.role?.trim().toLowerCase();
 
@@ -47,15 +48,29 @@ export const profileService = {
           }
         }
       } catch {
-        // Fallback gracefully without breaking the profile page
+        // Fallback gracefully
       }
     } else if (normalizedRole === "student") {
       try {
         const studentProfile = await studentService.getStudentProfile();
         if (studentProfile) {
-          if (studentProfile.year) {
-            academicYear = studentProfile.year;
-          }
+          academicYear = studentProfile.year || studentProfile.academicYearName || "Year 1";
+          studentDetails = {
+            studentCode: studentProfile.studentCode,
+            nationalId: studentProfile.nationalId,
+            className: studentProfile.className,
+            departmentName: studentProfile.departmentName,
+            majorName: studentProfile.majorName,
+            phone: studentProfile.phone,
+            address: studentProfile.address,
+            addressArabic: studentProfile.addressArabic,
+            relativeName: studentProfile.relativeName,
+            relativePhone: studentProfile.relativePhone,
+            overallGpa: studentProfile.overallGpa,
+            totalEnrolledSubjects: studentProfile.totalEnrolledSubjects,
+            completedCompetencies: studentProfile.completedCompetencies,
+            totalCompetencies: studentProfile.totalCompetencies,
+          };
         }
       } catch {
         // Fallback gracefully
@@ -71,6 +86,7 @@ export const profileService = {
       subject,
       academicYear,
       status: "Active",
+      ...studentDetails,
     };
   },
 };
