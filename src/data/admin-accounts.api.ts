@@ -1,6 +1,7 @@
 import { API_BASE_URL, secureFetch } from "@/config/api.config";
 import {
   AccountDetail,
+  AccountFormOptions,
   AccountListQuery,
   AccountPagedResult,
   AccountSummary,
@@ -35,6 +36,10 @@ export const AdminAccountsAPI = {
 
   async getRoles(): Promise<RoleOption[]> {
     return secureFetch<RoleOption[]>(`${API_BASE_URL}/admin/accounts/roles`);
+  },
+
+  async getFormOptions(): Promise<AccountFormOptions> {
+    return secureFetch<AccountFormOptions>(`${API_BASE_URL}/admin/accounts/options`);
   },
 
   async createAccount(payload: CreateAccountPayload): Promise<CreateAccountResult> {

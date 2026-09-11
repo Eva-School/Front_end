@@ -15,7 +15,7 @@ export interface ProfileData {
   addressArabic?: string;
   relativeName?: string;
   relativePhone?: string;
-  overallGpa?: number;
+  overallPercentage?: number;
   totalEnrolledSubjects?: number;
   completedCompetencies?: number;
   totalCompetencies?: number;

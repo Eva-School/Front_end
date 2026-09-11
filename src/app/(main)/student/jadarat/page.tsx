@@ -249,7 +249,7 @@ export default function JadaratGradesPage() {
                 COMPLETED UNITS
               </Typography>
               <Typography sx={{ fontSize: "24px", color: "#81c784", fontWeight: 800, mt: 0.2 }}>
-                {passed} / {total}
+                <bdi dir="ltr">{passed} / {total}</bdi>
               </Typography>
             </Box>
           </Stack>
@@ -428,9 +428,9 @@ export default function JadaratGradesPage() {
           },
         }}
       >
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", pb: 1 }}>
+        <DialogTitle component="div" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", pb: 1 }}>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: "#FFC600" }}>
+            <Typography component="div" variant="h6" sx={{ fontWeight: 800, color: "#FFC600" }}>
               Attempt Evaluation History
             </Typography>
             <Typography sx={{ fontSize: "13px", color: "rgba(255,255,255,0.6)" }}>

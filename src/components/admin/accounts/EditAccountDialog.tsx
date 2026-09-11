@@ -23,7 +23,11 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { useTranslations } from "next-intl";
 import { AdminAccountsAPI } from "@/data/admin-accounts.api";
-import { AccountDetail, UpdateAccountProfilePayload } from "@/types/account.types";
+import {
+  AccountDetail,
+  AccountFormOptions,
+  UpdateAccountProfilePayload,
+} from "@/types/account.types";
 import { appToast } from "@/hooks/useAppToast";
 import { formatLocalizedError } from "@/utils/error-formatter";
 
@@ -49,6 +53,11 @@ export default function EditAccountDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Form options (academic years, classes, departments)
+  const [formOptions, setFormOptions] = useState<AccountFormOptions | null>(null);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+
+  // Common identity fields
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -56,6 +65,7 @@ export default function EditAccountDialog({
   const [phoneNumber, setPhoneNumber] = useState("");
 
   // Teacher fields
+  const [teacherDepartmentId, setTeacherDepartmentId] = useState<number | "">("");
   const [qualifications, setQualifications] = useState("");
 
   // Student fields
@@ -63,6 +73,25 @@ export default function EditAccountDialog({
   const [studentCode, setStudentCode] = useState("");
   const [gender, setGender] = useState("Male");
   const [address, setAddress] = useState("");
+  const [academicYearId, setAcademicYearId] = useState<number | "">("");
+  const [classId, setClassId] = useState<number | "">("");
+  const [studentDepartmentId, setStudentDepartmentId] = useState<number | "">("");
+
+  useEffect(() => {
+    if (open) {
+      setLoadingOptions(true);
+      AdminAccountsAPI.getFormOptions()
+        .then((options) => {
+          setFormOptions(options);
+        })
+        .catch((err) => {
+          console.error("Failed to load form options:", err);
+        })
+        .finally(() => {
+          setLoadingOptions(false);
+        });
+    }
+  }, [open]);
 
   useEffect(() => {
     if (account) {
@@ -99,17 +128,61 @@ export default function EditAccountDialog({
 
         if (detail.teacherProfile) {
           setQualifications(detail.teacherProfile.qualifications || "");
+          setTeacherDepartmentId(detail.teacherProfile.departmentId ?? "");
         }
         if (detail.studentProfile) {
           setNationalId(detail.studentProfile.nationalId || "");
           setStudentCode(detail.studentProfile.studentCode || "");
           setGender(detail.studentProfile.gender || "Male");
           setAddress(detail.studentProfile.address || "");
+          setAcademicYearId(detail.studentProfile.currentAcademicYearId ?? "");
+          setClassId(detail.studentProfile.classId ?? "");
+          setStudentDepartmentId(detail.studentProfile.departmentId ?? "");
         }
         setError(null);
       });
     }
   }, [detail]);
+
+  const handleClassChange = (newClassId: number | "") => {
+    setClassId(newClassId);
+    if (newClassId && formOptions) {
+      const cls = formOptions.classes.find((c) => c.classId === newClassId);
+      if (cls) {
+        if (cls.academicYearId && (!academicYearId || academicYearId !== cls.academicYearId)) {
+          setAcademicYearId(cls.academicYearId);
+        }
+        if (cls.departmentId && !studentDepartmentId) {
+          setStudentDepartmentId(cls.departmentId);
+        }
+      }
+    }
+  };
+
+  const handleAcademicYearChange = (newYearId: number | "") => {
+    setAcademicYearId(newYearId);
+    if (newYearId && classId && formOptions) {
+      const cls = formOptions.classes.find((c) => c.classId === classId);
+      if (cls && cls.academicYearId !== newYearId) {
+        setClassId("");
+      }
+    }
+  };
+
+  const isTeacher =
+    detail?.role === "Teacher" ||
+    detail?.normalizedRole === "Teacher" ||
+    !!detail?.teacherProfile;
+
+  const isStudent =
+    detail?.role === "Student" ||
+    detail?.normalizedRole === "Student" ||
+    !!detail?.studentProfile;
+
+  const filteredClasses = (formOptions?.classes || []).filter((c) => {
+    if (!academicYearId) return true;
+    return c.academicYearId === academicYearId;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,14 +228,18 @@ export default function EditAccountDialog({
       phoneNumber: trimmedPhone || undefined,
     };
 
-    if (detail.role === "Teacher" || detail.teacherProfile) {
+    if (isTeacher) {
       payload.qualifications = qualifications.trim() || undefined;
+      payload.departmentId = teacherDepartmentId ? Number(teacherDepartmentId) : undefined;
     }
-    if (detail.role === "Student" || detail.studentProfile) {
+    if (isStudent) {
       payload.nationalId = nationalId.trim() || undefined;
       payload.studentCode = studentCode.trim() || undefined;
       payload.gender = gender;
       payload.address = address.trim() || undefined;
+      payload.academicYearId = academicYearId ? Number(academicYearId) : undefined;
+      payload.classId = classId === "" ? 0 : Number(classId);
+      payload.departmentId = studentDepartmentId ? Number(studentDepartmentId) : undefined;
     }
 
     setLoading(true);
@@ -179,7 +256,7 @@ export default function EditAccountDialog({
   };
 
   return (
-    <Dialog open={open} onClose={loading ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={loading ? undefined : onClose} maxWidth="md" fullWidth>
       <DialogTitle component="div" sx={{ m: 0, p: 2.5, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Typography variant="h6" component="span" fontWeight={700}>
           {t("accounts.dialogs.edit.title")}
@@ -206,21 +283,23 @@ export default function EditAccountDialog({
             )}
 
             <Typography variant="body2" color="text.secondary">
-              {t("accounts.dialogs.edit.description", { name: account?.fullName || account?.username || "" })}
+              {t("accounts.dialogs.edit.description", { name: detail?.fullName || detail?.username || "" })}
             </Typography>
 
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1.5 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" }, gap: 2 }}>
               <TextField
                 label={t("accounts.dialogs.create.firstName")}
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
+                fullWidth
                 disabled={loading}
               />
               <TextField
                 label={t("accounts.dialogs.create.middleName")}
                 value={middleName}
                 onChange={(e) => setMiddleName(e.target.value)}
+                fullWidth
                 disabled={loading}
               />
               <TextField
@@ -228,85 +307,176 @@ export default function EditAccountDialog({
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
+                fullWidth
                 disabled={loading}
               />
             </Box>
 
-            <TextField
-              label={t("accounts.dialogs.create.email")}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              fullWidth
-              disabled={loading}
-            />
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+              <TextField
+                label={t("accounts.dialogs.create.email")}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                fullWidth
+                disabled={loading}
+              />
 
-            <TextField
-              label={t("accounts.dialogs.create.phone")}
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              fullWidth
-              disabled={loading}
-              placeholder="e.g. 01012345678"
-              helperText={t("accounts.dialogs.create.phoneHelper", { defaultMessage: "Optional. e.g. 01012345678 or +201012345678" })}
-            />
+              <TextField
+                label={t("accounts.dialogs.create.phone")}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                fullWidth
+                disabled={loading}
+                placeholder="e.g. 01012345678"
+                helperText={t("accounts.dialogs.create.phoneHelper")}
+              />
+            </Box>
 
             {/* Role specific profile fields */}
-            {(account?.role === "Teacher" || account?.teacherProfile) && (
+            {isTeacher && (
               <>
                 <Divider />
                 <Typography variant="subtitle2" color="primary" fontWeight={700}>
                   {t("accounts.dialogs.details.profileInfo")}
                 </Typography>
-                <TextField
-                  label={t("accounts.dialogs.create.qualifications")}
-                  value={qualifications}
-                  onChange={(e) => setQualifications(e.target.value)}
-                  fullWidth
-                  disabled={loading}
-                />
+                <Stack spacing={2} sx={{ p: 2, borderRadius: 2, bgcolor: (theme) => theme.palette.action.hover }}>
+                  <FormControl fullWidth disabled={loading || loadingOptions}>
+                    <InputLabel>{t("accounts.dialogs.edit.department")}</InputLabel>
+                    <Select
+                      value={teacherDepartmentId}
+                      label={t("accounts.dialogs.edit.department")}
+                      onChange={(e) => setTeacherDepartmentId(e.target.value ? Number(e.target.value) : "")}
+                    >
+                      <MenuItem value="">
+                        <em>{t("accounts.dialogs.edit.noDepartment")}</em>
+                      </MenuItem>
+                      {formOptions?.departments.map((d) => (
+                        <MenuItem key={d.departmentId} value={d.departmentId}>
+                          {d.departmentName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    label={t("accounts.dialogs.edit.qualifications")}
+                    value={qualifications}
+                    onChange={(e) => setQualifications(e.target.value)}
+                    fullWidth
+                    disabled={loading}
+                    placeholder={t("accounts.dialogs.edit.qualificationsPlaceholder")}
+                  />
+                </Stack>
               </>
             )}
 
-            {(account?.role === "Student" || account?.studentProfile) && (
+            {isStudent && (
               <>
                 <Divider />
                 <Typography variant="subtitle2" color="primary" fontWeight={700}>
                   {t("accounts.dialogs.details.profileInfo")}
                 </Typography>
-                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+                <Stack spacing={2} sx={{ p: 2, borderRadius: 2, bgcolor: (theme) => theme.palette.action.hover }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                    <TextField
+                      label={t("accounts.dialogs.create.nationalId")}
+                      value={nationalId}
+                      onChange={(e) => setNationalId(e.target.value)}
+                      fullWidth
+                      disabled={loading}
+                    />
+                    <TextField
+                      label={t("accounts.dialogs.create.studentCode")}
+                      value={studentCode}
+                      onChange={(e) => setStudentCode(e.target.value)}
+                      fullWidth
+                      disabled={loading}
+                    />
+                  </Box>
+
+                  {/* Academic Stage / Year and Class Assignment */}
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                    <FormControl fullWidth disabled={loading || loadingOptions}>
+                      <InputLabel>{t("accounts.dialogs.edit.academicYear")}</InputLabel>
+                      <Select
+                        value={academicYearId}
+                        label={t("accounts.dialogs.edit.academicYear")}
+                        onChange={(e) => handleAcademicYearChange(e.target.value ? Number(e.target.value) : "")}
+                      >
+                        <MenuItem value="">
+                          <em>{t("accounts.dialogs.edit.selectAcademicYear")}</em>
+                        </MenuItem>
+                        {formOptions?.academicYears.map((ay) => (
+                          <MenuItem key={ay.academicYearId} value={ay.academicYearId}>
+                            {ay.yearName} {ay.stage ? `(${ay.stage})` : ""}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth disabled={loading || loadingOptions}>
+                      <InputLabel>{t("accounts.dialogs.edit.class")}</InputLabel>
+                      <Select
+                        value={classId}
+                        label={t("accounts.dialogs.edit.class")}
+                        onChange={(e) => handleClassChange(e.target.value ? Number(e.target.value) : "")}
+                      >
+                        <MenuItem value="">
+                          <em>{t("accounts.dialogs.edit.unassignedClass")}</em>
+                        </MenuItem>
+                        {filteredClasses.map((cls) => {
+                          const capacityInfo = cls.capacity ? `${cls.currentStudentCount}/${cls.capacity}` : `${cls.currentStudentCount}`;
+                          return (
+                            <MenuItem key={cls.classId} value={cls.classId}>
+                              {cls.className} ({capacityInfo}) {cls.departmentName ? `- ${cls.departmentName}` : ""}
+                            </MenuItem>
+                          );
+                        })}
+                      </Select>
+                    </FormControl>
+                  </Box>
+
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                    <FormControl fullWidth disabled={loading || loadingOptions}>
+                      <InputLabel>{t("accounts.dialogs.edit.department")}</InputLabel>
+                      <Select
+                        value={studentDepartmentId}
+                        label={t("accounts.dialogs.edit.department")}
+                        onChange={(e) => setStudentDepartmentId(e.target.value ? Number(e.target.value) : "")}
+                      >
+                        <MenuItem value="">
+                          <em>{t("accounts.dialogs.edit.noDepartment")}</em>
+                        </MenuItem>
+                        {formOptions?.departments.map((d) => (
+                          <MenuItem key={d.departmentId} value={d.departmentId}>
+                            {d.departmentName}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth disabled={loading}>
+                      <InputLabel>{t("accounts.dialogs.create.gender")}</InputLabel>
+                      <Select
+                        value={gender}
+                        label={t("accounts.dialogs.create.gender")}
+                        onChange={(e) => setGender(e.target.value)}
+                      >
+                        <MenuItem value="Male">{t("accounts.dialogs.create.male")}</MenuItem>
+                        <MenuItem value="Female">{t("accounts.dialogs.create.female")}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+
                   <TextField
-                    label={t("accounts.dialogs.create.nationalId")}
-                    value={nationalId}
-                    onChange={(e) => setNationalId(e.target.value)}
+                    label={t("accounts.dialogs.edit.address")}
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    fullWidth
                     disabled={loading}
                   />
-                  <TextField
-                    label={t("accounts.dialogs.create.studentCode")}
-                    value={studentCode}
-                    onChange={(e) => setStudentCode(e.target.value)}
-                    disabled={loading}
-                  />
-                </Box>
-                <FormControl fullWidth disabled={loading}>
-                  <InputLabel>{t("accounts.dialogs.create.gender")}</InputLabel>
-                  <Select
-                    value={gender}
-                    label={t("accounts.dialogs.create.gender")}
-                    onChange={(e) => setGender(e.target.value)}
-                  >
-                    <MenuItem value="Male">{t("accounts.dialogs.create.male")}</MenuItem>
-                    <MenuItem value="Female">{t("accounts.dialogs.create.female")}</MenuItem>
-                  </Select>
-                </FormControl>
-                <TextField
-                  label="Address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  fullWidth
-                  disabled={loading}
-                />
+                </Stack>
               </>
             )}
           </Stack>
@@ -325,3 +495,4 @@ export default function EditAccountDialog({
     </Dialog>
   );
 }
+

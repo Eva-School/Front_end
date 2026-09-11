@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -32,7 +32,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useTranslations } from "next-intl";
 import { AdminAccountsAPI } from "@/data/admin-accounts.api";
-import { CreateAccountPayload, RoleOption } from "@/types/account.types";
+import { AccountFormOptions, CreateAccountPayload, RoleOption } from "@/types/account.types";
 import { appToast } from "@/hooks/useAppToast";
 import { formatLocalizedError } from "@/utils/error-formatter";
 
@@ -54,8 +54,13 @@ export default function CreateAccountDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Form options (roles, academic years, classes, departments)
+  const [formOptions, setFormOptions] = useState<AccountFormOptions | null>(null);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+
   // Form fields
   const [username, setUsername] = useState("");
+  const [usernameTouched, setUsernameTouched] = useState(false);
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
@@ -69,6 +74,7 @@ export default function CreateAccountDialog({
   const [showPassword, setShowPassword] = useState(false);
 
   // Teacher fields
+  const [teacherDepartmentId, setTeacherDepartmentId] = useState<number | "">("");
   const [qualifications, setQualifications] = useState("");
 
   // Student fields
@@ -76,13 +82,58 @@ export default function CreateAccountDialog({
   const [studentCode, setStudentCode] = useState("");
   const [gender, setGender] = useState("Male");
   const [address, setAddress] = useState("");
+  const [academicYearId, setAcademicYearId] = useState<number | "">("");
+  const [classId, setClassId] = useState<number | "">("");
+  const [studentDepartmentId, setStudentDepartmentId] = useState<number | "">("");
 
   // Generated password result state
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    if (open) {
+      setLoadingOptions(true);
+      AdminAccountsAPI.getFormOptions()
+        .then((options) => {
+          setFormOptions(options);
+        })
+        .catch((err) => {
+          console.error("Failed to load account form options:", err);
+        })
+        .finally(() => {
+          setLoadingOptions(false);
+        });
+    }
+  }, [open]);
+
+  const handleClassChange = (newClassId: number | "") => {
+    setClassId(newClassId);
+    if (newClassId && formOptions) {
+      const cls = formOptions.classes.find((c) => c.classId === newClassId);
+      if (cls) {
+        if (cls.academicYearId && (!academicYearId || academicYearId !== cls.academicYearId)) {
+          setAcademicYearId(cls.academicYearId);
+        }
+        if (cls.departmentId && !studentDepartmentId) {
+          setStudentDepartmentId(cls.departmentId);
+        }
+      }
+    }
+  };
+
+  const handleAcademicYearChange = (newYearId: number | "") => {
+    setAcademicYearId(newYearId);
+    if (newYearId && classId && formOptions) {
+      const cls = formOptions.classes.find((c) => c.classId === classId);
+      if (cls && cls.academicYearId !== newYearId) {
+        setClassId("");
+      }
+    }
+  };
+
   const resetForm = () => {
     setUsername("");
+    setUsernameTouched(false);
     setEmail("");
     setFirstName("");
     setMiddleName("");
@@ -92,14 +143,30 @@ export default function CreateAccountDialog({
     setPasswordMode("auto");
     setCustomPassword("");
     setShowPassword(false);
+    setTeacherDepartmentId("");
     setQualifications("");
     setNationalId("");
     setStudentCode("");
     setGender("Male");
     setAddress("");
+    setAcademicYearId("");
+    setClassId("");
+    setStudentDepartmentId("");
     setError(null);
     setGeneratedPassword(null);
     setCopied(false);
+  };
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    if (!usernameTouched) {
+      const atIndex = val.indexOf("@");
+      const localPart = atIndex >= 0 ? val.substring(0, atIndex) : val;
+      const plusIndex = localPart.indexOf("+");
+      const cleanLocal = plusIndex >= 0 ? localPart.substring(0, plusIndex) : localPart;
+      const sanitized = cleanLocal.replace(/[^a-zA-Z0-9._-]/g, "");
+      setUsername(sanitized);
+    }
   };
 
   const handleClose = () => {
@@ -137,17 +204,15 @@ export default function CreateAccountDialog({
       setError(t("accounts.validations.lastNameRequired"));
       return;
     }
-    if (!trimmedUser) {
-      setError(t("accounts.validations.usernameRequired"));
-      return;
-    }
-    if (trimmedUser.length < 3 || trimmedUser.length > 100) {
-      setError(t("accounts.validations.usernameLength"));
-      return;
-    }
-    if (!/^[a-zA-Z0-9._-]+$/.test(trimmedUser)) {
-      setError(t("accounts.validations.usernameInvalid"));
-      return;
+    if (trimmedUser) {
+      if (trimmedUser.length > 100) {
+        setError(t("accounts.validations.usernameLength", { defaultMessage: "Username cannot exceed 100 characters." }));
+        return;
+      }
+      if (!/^[a-zA-Z0-9._-]+$/.test(trimmedUser)) {
+        setError(t("accounts.validations.usernameInvalid", { defaultMessage: "Username can only contain letters, numbers, dots, underscores, and hyphens." }));
+        return;
+      }
     }
     if (!trimmedEmail) {
       setError(t("accounts.validations.emailRequired"));
@@ -173,7 +238,7 @@ export default function CreateAccountDialog({
     }
 
     const payload: CreateAccountPayload = {
-      username: trimmedUser,
+      username: trimmedUser || undefined,
       email: trimmedEmail,
       firstName: trimmedFirst,
       middleName: middleName.trim() || undefined,
@@ -185,11 +250,15 @@ export default function CreateAccountDialog({
 
     if (selectedRole === "Teacher") {
       payload.qualifications = qualifications.trim() || undefined;
+      payload.departmentId = teacherDepartmentId ? Number(teacherDepartmentId) : undefined;
     } else if (selectedRole === "Student") {
       payload.nationalId = nationalId.trim() || undefined;
       payload.studentCode = studentCode.trim() || undefined;
       payload.gender = gender;
       payload.address = address.trim() || undefined;
+      payload.academicYearId = academicYearId ? Number(academicYearId) : undefined;
+      payload.classId = classId ? Number(classId) : undefined;
+      payload.departmentId = studentDepartmentId ? Number(studentDepartmentId) : undefined;
     }
 
     setLoading(true);
@@ -211,6 +280,12 @@ export default function CreateAccountDialog({
       setLoading(false);
     }
   };
+
+  const rolesToRender = formOptions?.roles?.length ? formOptions.roles : roles;
+  const filteredClasses = (formOptions?.classes || []).filter((c) => {
+    if (!academicYearId) return true;
+    return c.academicYearId === academicYearId;
+  });
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -240,22 +315,41 @@ export default function CreateAccountDialog({
               variant="outlined"
               sx={{
                 p: 2.5,
+                bgcolor: (theme) => (theme.palette.mode === "dark" ? "grey.900" : "grey.50"),
+                borderRadius: 2,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                backgroundColor: (theme) => theme.palette.action.hover,
-                borderRadius: 2,
+                gap: 2,
               }}
             >
-              <Typography variant="h6" fontFamily="monospace" fontWeight={700} sx={{ letterSpacing: 1.5 }}>
-                {generatedPassword}
-              </Typography>
+              <Box>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {t("accounts.dialogs.create.username")}
+                </Typography>
+                <Typography variant="body1" fontWeight={700} sx={{ fontFamily: "monospace", mb: 1 }}>
+                  {username || email}
+                </Typography>
+
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {t("accounts.dialogs.create.generatedPasswordTitle")}
+                </Typography>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  color="primary.main"
+                  sx={{ fontFamily: "monospace", letterSpacing: 1 }}
+                >
+                  {generatedPassword}
+                </Typography>
+              </Box>
+
               <Button
-                variant="contained"
-                size="small"
+                variant={copied ? "contained" : "outlined"}
+                color={copied ? "success" : "primary"}
                 startIcon={copied ? <CheckIcon /> : <ContentCopyIcon />}
                 onClick={handleCopyPassword}
-                color={copied ? "success" : "primary"}
+                sx={{ minWidth: 140 }}
               >
                 {copied ? t("accounts.dialogs.create.copied") : t("accounts.dialogs.create.copyPassword")}
               </Button>
@@ -265,7 +359,7 @@ export default function CreateAccountDialog({
       ) : (
         <form onSubmit={handleSubmit}>
           <DialogContent sx={{ p: 3 }}>
-            <Stack spacing={3}>
+            <Stack spacing={2.5}>
               {error && (
                 <Alert severity="error" sx={{ borderRadius: 2 }}>
                   {error}
@@ -304,22 +398,25 @@ export default function CreateAccountDialog({
 
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
                 <TextField
-                  label={t("accounts.dialogs.create.username")}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  fullWidth
-                  disabled={loading}
-                  helperText="Letters, numbers, dots, hyphens"
-                />
-                <TextField
                   label={t("accounts.dialogs.create.email")}
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => handleEmailChange(e.target.value)}
                   required
                   fullWidth
                   disabled={loading}
+                />
+                <TextField
+                  label={t("accounts.dialogs.create.username")}
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setUsernameTouched(true);
+                  }}
+                  fullWidth
+                  disabled={loading}
+                  helperText={t("accounts.dialogs.create.usernameHelper")}
+                  placeholder="e.g. john.doe"
                 />
               </Box>
 
@@ -330,7 +427,7 @@ export default function CreateAccountDialog({
                 fullWidth
                 disabled={loading}
                 placeholder="e.g. 01012345678"
-                helperText={t("accounts.dialogs.create.phoneHelper", { defaultMessage: "Optional. e.g. 01012345678 or +201012345678" })}
+                helperText={t("accounts.dialogs.create.phoneHelper")}
               />
 
               <Divider />
@@ -346,7 +443,7 @@ export default function CreateAccountDialog({
                   label={t("accounts.dialogs.create.role")}
                   onChange={(e) => setSelectedRole(e.target.value)}
                 >
-                  {roles.map((r) => {
+                  {rolesToRender.map((r) => {
                     let label = r.roleName;
                     if (r.normalizedName === "Admin") label = t("accounts.roles.Admin");
                     else if (r.normalizedName === "StudentAffairs") label = t("accounts.roles.StudentAffairs");
@@ -363,7 +460,24 @@ export default function CreateAccountDialog({
 
               {/* Dynamic Teacher fields */}
               {selectedRole === "Teacher" && (
-                <Box sx={{ p: 2, borderRadius: 2, bgcolor: (theme) => theme.palette.action.hover }}>
+                <Stack spacing={2} sx={{ p: 2, borderRadius: 2, bgcolor: (theme) => theme.palette.action.hover }}>
+                  <FormControl fullWidth disabled={loading || loadingOptions}>
+                    <InputLabel>{t("accounts.dialogs.create.department")}</InputLabel>
+                    <Select
+                      value={teacherDepartmentId}
+                      label={t("accounts.dialogs.create.department")}
+                      onChange={(e) => setTeacherDepartmentId(e.target.value ? Number(e.target.value) : "")}
+                    >
+                      <MenuItem value="">
+                        <em>{t("accounts.dialogs.create.noDepartment")}</em>
+                      </MenuItem>
+                      {formOptions?.departments.map((d) => (
+                        <MenuItem key={d.departmentId} value={d.departmentId}>
+                          {d.departmentName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                   <TextField
                     label={t("accounts.dialogs.create.qualifications")}
                     value={qualifications}
@@ -372,7 +486,7 @@ export default function CreateAccountDialog({
                     disabled={loading}
                     placeholder="e.g. B.Sc. in Computer Science"
                   />
-                </Box>
+                </Stack>
               )}
 
               {/* Dynamic Student fields */}
@@ -394,19 +508,83 @@ export default function CreateAccountDialog({
                       disabled={loading}
                     />
                   </Box>
-                  <FormControl fullWidth disabled={loading}>
-                    <InputLabel>{t("accounts.dialogs.create.gender")}</InputLabel>
-                    <Select
-                      value={gender}
-                      label={t("accounts.dialogs.create.gender")}
-                      onChange={(e) => setGender(e.target.value)}
-                    >
-                      <MenuItem value="Male">{t("accounts.dialogs.create.male")}</MenuItem>
-                      <MenuItem value="Female">{t("accounts.dialogs.create.female")}</MenuItem>
-                    </Select>
-                  </FormControl>
+
+                  {/* Academic Stage / Year and Class Assignment */}
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                    <FormControl fullWidth disabled={loading || loadingOptions}>
+                      <InputLabel>{t("accounts.dialogs.create.academicYear")}</InputLabel>
+                      <Select
+                        value={academicYearId}
+                        label={t("accounts.dialogs.create.academicYear")}
+                        onChange={(e) => handleAcademicYearChange(e.target.value ? Number(e.target.value) : "")}
+                      >
+                        <MenuItem value="">
+                          <em>{t("accounts.dialogs.create.selectAcademicYear")}</em>
+                        </MenuItem>
+                        {formOptions?.academicYears.map((ay) => (
+                          <MenuItem key={ay.academicYearId} value={ay.academicYearId}>
+                            {ay.yearName} {ay.stage ? `(${ay.stage})` : ""}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth disabled={loading || loadingOptions}>
+                      <InputLabel>{t("accounts.dialogs.create.class")}</InputLabel>
+                      <Select
+                        value={classId}
+                        label={t("accounts.dialogs.create.class")}
+                        onChange={(e) => handleClassChange(e.target.value ? Number(e.target.value) : "")}
+                      >
+                        <MenuItem value="">
+                          <em>{t("accounts.dialogs.create.unassignedClass")}</em>
+                        </MenuItem>
+                        {filteredClasses.map((cls) => {
+                          const capacityInfo = cls.capacity ? `${cls.currentStudentCount}/${cls.capacity}` : `${cls.currentStudentCount}`;
+                          return (
+                            <MenuItem key={cls.classId} value={cls.classId}>
+                              {cls.className} ({capacityInfo}) {cls.departmentName ? `- ${cls.departmentName}` : ""}
+                            </MenuItem>
+                          );
+                        })}
+                      </Select>
+                    </FormControl>
+                  </Box>
+
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                    <FormControl fullWidth disabled={loading || loadingOptions}>
+                      <InputLabel>{t("accounts.dialogs.create.department")}</InputLabel>
+                      <Select
+                        value={studentDepartmentId}
+                        label={t("accounts.dialogs.create.department")}
+                        onChange={(e) => setStudentDepartmentId(e.target.value ? Number(e.target.value) : "")}
+                      >
+                        <MenuItem value="">
+                          <em>{t("accounts.dialogs.create.noDepartment")}</em>
+                        </MenuItem>
+                        {formOptions?.departments.map((d) => (
+                          <MenuItem key={d.departmentId} value={d.departmentId}>
+                            {d.departmentName}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth disabled={loading}>
+                      <InputLabel>{t("accounts.dialogs.create.gender")}</InputLabel>
+                      <Select
+                        value={gender}
+                        label={t("accounts.dialogs.create.gender")}
+                        onChange={(e) => setGender(e.target.value)}
+                      >
+                        <MenuItem value="Male">{t("accounts.dialogs.create.male")}</MenuItem>
+                        <MenuItem value="Female">{t("accounts.dialogs.create.female")}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+
                   <TextField
-                    label="Address"
+                    label={t("accounts.dialogs.create.address")}
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     fullWidth

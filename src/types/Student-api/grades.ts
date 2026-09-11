@@ -35,7 +35,7 @@ export interface StudentProfileData {
   totalEnrolledSubjects: number;
   completedCompetencies: number;
   totalCompetencies: number;
-  overallGpa?: number;
+  overallPercentage?: number;
 }
 
 export interface UpdateStudentContactData {
@@ -60,19 +60,19 @@ export interface QuarterGradeRow {
   subject: string;
   subjectArabic?: string;
   subjectCode?: string;
-  quarter1?: number;
-  quarter2?: number;
-  quarter3?: number;
-  quarter4?: number;
+  quarter1?: number | null;
+  quarter2?: number | null;
+  quarter3?: number | null;
+  quarter4?: number | null;
   maxQ1?: number;
   maxQ2?: number;
   maxQ3?: number;
   maxQ4?: number;
   maxQuarter?: number;
-  courseworkTotal?: number;
-  yourGrade: number;
-  quarterGrade: number;
-  percentage?: number;
+  courseworkTotal?: number | null;
+  yourGrade?: number | null;
+  quarterGrade?: number | null;
+  percentage?: number | null;
   quizzes?: StudentQuizItem[];
 }
 
@@ -82,7 +82,7 @@ export interface QuarterGradesResponse {
   academicYearName?: string;
   availableTerms?: number[];
   selectedTerm?: number;
-  averageGrade?: string;
+  averageGrade?: string | null;
 }
 
 export interface FinalGradeRow {
@@ -90,28 +90,32 @@ export interface FinalGradeRow {
   subject: string;
   subjectArabic?: string;
   subjectCode?: string;
+  termId?: number;
+  termName?: string;
   creditHours?: number;
-  courseworkScore?: number;
-  finalExamScore?: number;
-  totalScore?: number;
+  courseworkScore?: number | null;
+  finalExamScore?: number | null;
+  totalScore?: number | null;
   maxScore?: number;
-  percentage?: number;
-  letterGrade?: string;
+  percentage?: number | null;
+  letterGrade?: string | null;
   status?: string;
   isApproved?: boolean;
-  yourGrade: number;
-  quarterGrade: number;
+  yourGrade?: number | null;
+  quarterGrade?: number | null;
 }
 
 export interface FinalGradesResponse {
   grades: FinalGradeRow[];
   year: StudentYearKey;
   academicYearName?: string;
-  termGpa?: number;
   cumulativeAverage?: number;
-  totalCredits?: number;
+  totalEarnedScore?: number;
+  totalMaxScore?: number;
+  totalSubjects?: number;
+  passedSubjects?: number;
   standing?: string;
-  averageGrade?: string;
+  averageGrade?: string | null;
 }
 
 export interface CompetencyAttemptHistory {

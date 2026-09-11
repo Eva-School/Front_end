@@ -250,8 +250,8 @@ export default function ProfilePage() {
                 {profile.relativePhone && (
                   <InfoItem label="Guardian Phone" value={profile.relativePhone} />
                 )}
-                {profile.overallGpa !== undefined && profile.overallGpa !== null && (
-                  <InfoItem label="Cumulative GPA" value={`${profile.overallGpa.toFixed(2)} / 4.0`} />
+                {profile.overallPercentage !== undefined && profile.overallPercentage !== null && (
+                  <InfoItem label={t("profile.overallAverage", "Overall Average")} value={`${profile.overallPercentage}%`} />
                 )}
                 {profile.completedCompetencies !== undefined && (
                   <InfoItem
@@ -371,8 +371,8 @@ const EditProfileDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "20px" } }}>
-      <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography variant="h6" sx={{ fontWeight: 800 }}>
+      <DialogTitle component="div" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography component="div" variant="h6" sx={{ fontWeight: 800 }}>
           {isStudent ? "Update Contact Information" : "Edit Profile"}
         </Typography>
         <IconButton onClick={onClose} size="small">

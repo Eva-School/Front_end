@@ -66,7 +66,7 @@ export const profileService = {
             addressArabic: studentProfile.addressArabic,
             relativeName: studentProfile.relativeName,
             relativePhone: studentProfile.relativePhone,
-            overallGpa: studentProfile.overallGpa,
+            overallPercentage: studentProfile.overallPercentage,
             totalEnrolledSubjects: studentProfile.totalEnrolledSubjects,
             completedCompetencies: studentProfile.completedCompetencies,
             totalCompetencies: studentProfile.totalCompetencies,

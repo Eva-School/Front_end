@@ -72,23 +72,28 @@ export async function getQuarterGrades(
   year: StudentYearKey,
   termId?: number
 ): Promise<QuarterGradesResponse> {
-  const url = new URL(`${API_BASE_URL}/student/grades/quarter`);
-  url.searchParams.set("year", year);
+  const params = new URLSearchParams();
+  params.set("year", year);
   if (termId !== undefined) {
-    url.searchParams.set("termId", termId.toString());
+    params.set("termId", termId.toString());
   }
 
-  const data = (await secureFetch(url.toString())) as QuarterGradesResponse &
+  const data = (await secureFetch(
+    `${API_BASE_URL}/student/grades/quarter?${params.toString()}`
+  )) as QuarterGradesResponse &
     ListEnvelope<QuarterGradesResponse["grades"][number]>;
 
   const gradesList = Array.isArray(data) ? data : data.grades ?? (data as any).data ?? [];
+  const releasedQuarterGrades = gradesList.filter(
+    (g) => g.percentage !== null && g.percentage !== undefined
+  );
   const averageCalc =
-    gradesList.length > 0
+    releasedQuarterGrades.length > 0
       ? (
-          gradesList.reduce((sum, g) => sum + (g.percentage ?? g.yourGrade ?? 0), 0) /
-          gradesList.length
+          releasedQuarterGrades.reduce((sum, g) => sum + (g.percentage ?? 0), 0) /
+          releasedQuarterGrades.length
         ).toFixed(1) + "%"
-      : "—";
+      : null;
 
   return {
     grades: gradesList,
@@ -109,22 +114,31 @@ export async function getFinalGrades(year: StudentYearKey): Promise<FinalGradesR
   )) as FinalGradesResponse & ListEnvelope<FinalGradesResponse["grades"][number]>;
 
   const gradesList = Array.isArray(data) ? data : data.grades ?? (data as any).data ?? [];
+  const releasedFinalGrades = gradesList.filter(
+    (g) =>
+      g.percentage !== null &&
+      g.percentage !== undefined &&
+      g.status !== "Not Released" &&
+      g.status !== "In Progress"
+  );
   const avg =
-    gradesList.length > 0
+    releasedFinalGrades.length > 0
       ? (
-          gradesList.reduce((sum, g) => sum + (g.percentage ?? g.totalScore ?? 0), 0) /
-          gradesList.length
+          releasedFinalGrades.reduce((sum, g) => sum + (g.percentage ?? 0), 0) /
+          releasedFinalGrades.length
         ).toFixed(1) + "%"
-      : "—";
+      : null;
 
   return {
     grades: gradesList,
     year: data.year ?? year,
     academicYearName: data.academicYearName,
-    termGpa: data.termGpa,
     cumulativeAverage: data.cumulativeAverage,
-    totalCredits: data.totalCredits,
-    standing: data.standing ?? "Good Standing",
+    totalEarnedScore: data.totalEarnedScore,
+    totalMaxScore: data.totalMaxScore,
+    totalSubjects: data.totalSubjects ?? gradesList.length,
+    passedSubjects: data.passedSubjects,
+    standing: data.standing ?? (releasedFinalGrades.length > 0 ? "Pass" : "Not Released"),
     averageGrade: data.averageGrade ?? avg,
   };
 }

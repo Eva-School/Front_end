@@ -193,10 +193,10 @@ export default function StudentDashboard() {
                   />
                 )}
 
-                {profile.overallGpa !== null && profile.overallGpa !== undefined && (
+                {profile.overallPercentage !== null && profile.overallPercentage !== undefined && (
                   <Chip
                     icon={<GradeIcon sx={{ fontSize: 16, color: "#ffd54f !important" }} />}
-                    label={`GPA: ${profile.overallGpa.toFixed(2)}`}
+                    label={`${t("dashboards.average", "Average")}: ${profile.overallPercentage}%`}
                     size="small"
                     sx={{
                       color: "#ffd54f",
@@ -210,7 +210,7 @@ export default function StudentDashboard() {
                 {profile.totalCompetencies > 0 && (
                   <Chip
                     icon={<CheckCircleIcon sx={{ fontSize: 16, color: "#81c784 !important" }} />}
-                    label={`Jadarat: ${profile.completedCompetencies}/${profile.totalCompetencies}`}
+                    label={<>Jadarat: <bdi dir="ltr">{`${profile.completedCompetencies}/${profile.totalCompetencies}`}</bdi></>}
                     size="small"
                     sx={{
                       color: "#81c784",

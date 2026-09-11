@@ -19,6 +19,7 @@ import enViceDashboard from "./en/viceDashboard.json";
 import enViceGrades from "./en/viceGrades.json";
 import enAccounts from "./en/accounts.json";
 import enClasses from "./en/classes.json";
+import enStudentGrades from "./en/studentGrades.json";
 import arA11y from "./ar/a11y.json";
 import arAbout from "./ar/about.json";
 import arAcademicYears from "./ar/academicYears.json";
@@ -40,6 +41,7 @@ import arViceDashboard from "./ar/viceDashboard.json";
 import arViceGrades from "./ar/viceGrades.json";
 import arAccounts from "./ar/accounts.json";
 import arClasses from "./ar/classes.json";
+import arStudentGrades from "./ar/studentGrades.json";
 
 const en = {
   ...enA11y,
@@ -63,6 +65,7 @@ const en = {
   ...enViceGrades,
   ...enAccounts,
   ...enClasses,
+  ...enStudentGrades,
 };
 
 const ar: typeof en = {
@@ -87,6 +90,7 @@ const ar: typeof en = {
   ...arViceGrades,
   ...arAccounts,
   ...arClasses,
+  ...arStudentGrades,
 };
 
 export const messages = { en, ar } as const;

@@ -106,8 +106,8 @@ function ComparisonChart({ subjects, selected }: { subjects: SubjectProgress[]; 
     <Box sx={{ width: "100%", overflowX: "auto" }}>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H }}>
         <defs>
-          {filtered.map((s) => (
-            <linearGradient key={s.subject} id={`cg-${s.subject.replace(/\s/g, "")}`} x1="0" y1="0" x2="0" y2="1">
+          {filtered.map((s, idx) => (
+            <linearGradient key={`${s.subject}-${idx}`} id={`cg-${s.subject.replace(/\s/g, "")}-${idx}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={s.color} stopOpacity="0.15" />
               <stop offset="100%" stopColor={s.color} stopOpacity="0" />
             </linearGradient>
@@ -142,13 +142,13 @@ function ComparisonChart({ subjects, selected }: { subjects: SubjectProgress[]; 
         })}
 
         {/* Lines */}
-        {filtered.map((s) => {
+        {filtered.map((s, idx) => {
           const pts = getPoints(s.scores);
           const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
           const areaPath = `${linePath} L ${pts[pts.length - 1].x} ${H - padB} L ${pts[0].x} ${H - padB} Z`;
           return (
-            <g key={s.subject}>
-              <path d={areaPath} fill={`url(#cg-${s.subject.replace(/\s/g, "")})`} />
+            <g key={`${s.subject}-${idx}`}>
+              <path d={areaPath} fill={`url(#cg-${s.subject.replace(/\s/g, "")}-${idx})`} />
               <path d={linePath} fill="none" stroke={s.color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
               {pts.map((p, i) => (
                 <g key={i}>
@@ -211,14 +211,25 @@ export default function GradeProgressPage() {
       secureFetch<StudentProgressApiItem[]>(`${API_BASE_URL}/student/grades/progress?year=${encodeURIComponent(year)}`)
         .then((data) => {
           if (cancelled) return;
-          const parsed: SubjectProgress[] = (Array.isArray(data) ? data : []).map((item, index) => ({
-            subject: item.subject,
-            color: SUBJECT_COLORS[index % SUBJECT_COLORS.length],
-            scores: [
-              { period: "Quarter", score: Number(item.quarterAverage), max: 100 },
-              { period: "Final", score: Number(item.finalExam), max: 100 },
-            ],
-          }));
+          const parsed: SubjectProgress[] = [];
+          const seen = new Map<string, SubjectProgress>();
+
+          (Array.isArray(data) ? data : []).forEach((item) => {
+            const subjectName = item.subject?.trim() || "Subject";
+            if (!seen.has(subjectName)) {
+              const sp: SubjectProgress = {
+                subject: subjectName,
+                color: SUBJECT_COLORS[seen.size % SUBJECT_COLORS.length],
+                scores: [
+                  { period: "Quarter", score: Number(item.quarterAverage), max: 100 },
+                  { period: "Final", score: Number(item.finalExam), max: 100 },
+                ],
+              };
+              seen.set(subjectName, sp);
+              parsed.push(sp);
+            }
+          });
+
           setSubjects(parsed);
           setSelected(parsed.slice(0, 3).map((s) => s.subject));
         })
@@ -397,9 +408,9 @@ export default function GradeProgressPage() {
                 Subject Comparison
               </Typography>
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                {subjects.map((s) => (
+                {subjects.map((s, idx) => (
                   <Chip
-                    key={s.subject}
+                    key={`${s.subject}-${idx}`}
                     label={s.subject}
                     size="small"
                     onClick={() => toggleSubject(s.subject)}
@@ -427,7 +438,7 @@ export default function GradeProgressPage() {
               gap: 2.5,
             }}
           >
-            {subjects.map((s) => {
+            {subjects.map((s, idx) => {
               const avg = Math.round(s.scores.reduce((a, b) => a + b.score, 0) / s.scores.length);
               const latest = s.scores[s.scores.length - 1];
               const first = s.scores[0];
@@ -435,7 +446,7 @@ export default function GradeProgressPage() {
 
               return (
                 <Box
-                  key={s.subject}
+                  key={`${s.subject}-${idx}`}
                   sx={{
                     bgcolor: theme.palette.background.paper,
                     borderRadius: 3,
@@ -465,8 +476,8 @@ export default function GradeProgressPage() {
                   </Box>
                   <SubjectSparkline data={s.scores} color={s.color} />
                   <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
-                    {s.scores.map((sc) => (
-                      <Box key={sc.period} sx={{ textAlign: "center" }}>
+                    {s.scores.map((sc, scIdx) => (
+                      <Box key={`${sc.period}-${scIdx}`} sx={{ textAlign: "center" }}>
                         <Typography variant="caption" sx={{ color: s.color, fontWeight: 700, fontSize: "0.7rem" }}>
                           {sc.score}
                         </Typography>

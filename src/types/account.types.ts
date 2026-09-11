@@ -81,7 +81,7 @@ export interface AccountPagedResult<T> {
 }
 
 export interface CreateAccountPayload {
-  username: string;
+  username?: string;
   email: string;
   password?: string;
   firstName: string;
@@ -117,6 +117,8 @@ export interface UpdateAccountProfilePayload {
   nationalId?: string;
   studentCode?: string;
   gender?: string;
+  academicYearId?: number;
+  classId?: number | null;
   address?: string;
 }
 
@@ -139,3 +141,36 @@ export interface SetAccountStatusPayload {
 export interface ResetPasswordPayload {
   newPassword: string;
 }
+
+export interface AcademicYearOption {
+  academicYearId: number;
+  yearName: string;
+  stage: string;
+  isActive: boolean;
+}
+
+export interface ClassOption {
+  classId: number;
+  className: string;
+  academicYearId?: number | null;
+  academicYearName: string;
+  stage: string;
+  departmentId?: number | null;
+  departmentName?: string | null;
+  capacity?: number | null;
+  currentStudentCount: number;
+}
+
+export interface DepartmentOption {
+  departmentId: number;
+  departmentName: string;
+  isActive: boolean;
+}
+
+export interface AccountFormOptions {
+  roles: RoleOption[];
+  academicYears: AcademicYearOption[];
+  classes: ClassOption[];
+  departments: DepartmentOption[];
+}
+
