@@ -1,5 +1,3 @@
-import Script from "next/script";
-
 export default function AccessibilityScript() {
   const script = `
     (function() {
@@ -19,5 +17,5 @@ export default function AccessibilityScript() {
       } catch (e) {}
     })();
   `;
-  return <Script id="app-a11y-theme-init" strategy="beforeInteractive">{script}</Script>;
+  return <script id="app-a11y-theme-init" dangerouslySetInnerHTML={{ __html: script }} />;
 }

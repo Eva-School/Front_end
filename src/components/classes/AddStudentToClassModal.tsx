@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Avatar,
@@ -11,7 +11,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   InputAdornment,
   List,
   ListItem,
@@ -85,16 +84,7 @@ export default function AddStudentToClassModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Load unassigned students when opened
-  useEffect(() => {
-    if (open) {
-      loadUnassignedStudents();
-      setErrorMsg(null);
-      setSuccessMsg(null);
-    }
-  }, [open, cohort, department]);
-
-  const loadUnassignedStudents = async () => {
+  const loadUnassignedStudents = useCallback(async () => {
     setIsLoadingPool(true);
     try {
       const query = new URLSearchParams({
@@ -113,7 +103,16 @@ export default function AddStudentToClassModal({
     } finally {
       setIsLoadingPool(false);
     }
-  };
+  }, [cohort, department, academicYearName]);
+
+  // Load unassigned students when opened
+  useEffect(() => {
+    if (open) {
+      loadUnassignedStudents();
+      setErrorMsg(null);
+      setSuccessMsg(null);
+    }
+  }, [open, loadUnassignedStudents]);
 
   const handleAssignStudent = async (studentId: string) => {
     setAssigningId(studentId);

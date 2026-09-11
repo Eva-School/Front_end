@@ -30,15 +30,16 @@ const StudentYearContext = createContext<StudentYearContextType | undefined>(und
 
 export function StudentYearProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [selectedYear, setSelectedYearState] = useState<StudentYearKey | null>(null);
-  const [currentYear, setCurrentYear] = useState<StudentYearKey>(defaultYear);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "junior" || stored === "senior" || stored === "wheeler") {
-      setSelectedYearState(stored);
+  const [selectedYear, setSelectedYearState] = useState<StudentYearKey | null>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "junior" || stored === "senior" || stored === "wheeler") {
+        return stored;
+      }
     }
-  }, []);
+    return null;
+  });
+  const [currentYear, setCurrentYear] = useState<StudentYearKey>(defaultYear);
 
   useEffect(() => {
     if (!user) {

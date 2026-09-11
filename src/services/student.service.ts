@@ -83,7 +83,7 @@ export async function getQuarterGrades(
   )) as QuarterGradesResponse &
     ListEnvelope<QuarterGradesResponse["grades"][number]>;
 
-  const gradesList = Array.isArray(data) ? data : data.grades ?? (data as any).data ?? [];
+  const gradesList = getList(data, "grades");
   const releasedQuarterGrades = gradesList.filter(
     (g) => g.percentage !== null && g.percentage !== undefined
   );
@@ -113,7 +113,7 @@ export async function getFinalGrades(year: StudentYearKey): Promise<FinalGradesR
     `${API_BASE_URL}/student/grades/final?year=${encodeURIComponent(year)}`
   )) as FinalGradesResponse & ListEnvelope<FinalGradesResponse["grades"][number]>;
 
-  const gradesList = Array.isArray(data) ? data : data.grades ?? (data as any).data ?? [];
+  const gradesList = getList(data, "grades");
   const releasedFinalGrades = gradesList.filter(
     (g) =>
       g.percentage !== null &&
@@ -151,7 +151,7 @@ export async function getJadaratGrades(year: StudentYearKey): Promise<JadaratGra
     `${API_BASE_URL}/student/grades/jadarat?year=${encodeURIComponent(year)}`
   )) as JadaratGradesResponse & ListEnvelope<JadaratGradesResponse["grades"][number]>;
 
-  const gradesList = Array.isArray(data) ? data : data.grades ?? (data as any).data ?? [];
+  const gradesList = getList(data, "grades");
 
   return {
     grades: gradesList,

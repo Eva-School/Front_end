@@ -31,13 +31,11 @@ import VerifiedIcon from "@mui/icons-material/Verified";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
-import SchoolIcon from "@mui/icons-material/School";
-import BadgeIcon from "@mui/icons-material/Badge";
 import ClassIcon from "@mui/icons-material/Class";
 import DateRangeIcon from "@mui/icons-material/DateRange";
 import { useStudentYear } from "@/context/StudentYearContext";
 import { studentService } from "@/services/student.service";
-import type { FinalGradeRow, FinalGradesResponse, StudentProfileData } from "@/types/Student-api/grades";
+import type { FinalGradesResponse, StudentProfileData } from "@/types/Student-api/grades";
 import { useLanguage } from "@/context/LanguageContext";
 
 const YEAR_LABELS: Record<string, string> = {
