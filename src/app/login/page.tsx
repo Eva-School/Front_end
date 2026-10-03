@@ -15,6 +15,7 @@ import {
     alpha,
     Tooltip,
     IconButton,
+    InputAdornment,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
@@ -22,6 +23,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import LanguageIcon from "@mui/icons-material/Language";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -56,6 +59,7 @@ const LoginPage = () => {
     const [currentImage, setCurrentImage] = useState(0);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -337,7 +341,7 @@ const LoginPage = () => {
                               fullWidth
                               id="login-password-input"
                               label={t("auth.password")}
-                              type="password"
+                              type={showPassword ? "text" : "password"}
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
                               disabled={isSubmitting || loading}
@@ -353,6 +357,34 @@ const LoginPage = () => {
                               }}
                               autoComplete="current-password"
                               inputProps={{ maxLength: 200 }}
+                              InputProps={{
+                                  endAdornment: (
+                                      <InputAdornment position="end">
+                                          <Tooltip title={showPassword ? t("auth.hidePassword") : t("auth.showPassword")} arrow>
+                                              <IconButton
+                                                  aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                                                  onClick={() => setShowPassword((prev) => !prev)}
+                                                  onMouseDown={(e) => e.preventDefault()}
+                                                  edge="end"
+                                                  size="small"
+                                                  disabled={isSubmitting || loading}
+                                                  sx={{
+                                                      color: theme.palette.text.secondary,
+                                                      "&:hover": {
+                                                          color: theme.palette.primary.main,
+                                                      },
+                                                  }}
+                                              >
+                                                  {showPassword ? (
+                                                      <VisibilityOffIcon fontSize="small" />
+                                                  ) : (
+                                                      <VisibilityIcon fontSize="small" />
+                                                  )}
+                                              </IconButton>
+                                          </Tooltip>
+                                      </InputAdornment>
+                                  ),
+                              }}
                           />
 
                           <AnimatePresence>

@@ -15,16 +15,56 @@ import {
   Divider,
   IconButton,
   InputAdornment,
+  Tooltip,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import ShuffleIcon from "@mui/icons-material/Shuffle";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import CheckIcon from "@mui/icons-material/Check";
 import { useTranslations } from "next-intl";
 import { AdminAccountsAPI } from "@/data/admin-accounts.api";
 import { AccountSummary } from "@/types/account.types";
 import { appToast } from "@/hooks/useAppToast";
 import { formatLocalizedError } from "@/utils/error-formatter";
+
+function generateSecureRandomPassword(length = 12): string {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnopqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%^&*";
+  const all = upper + lower + digits + symbols;
+
+  const getRandomChar = (str: string) => {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    return str[array[0] % str.length];
+  };
+
+  const passwordChars = [
+    getRandomChar(upper),
+    getRandomChar(lower),
+    getRandomChar(digits),
+    getRandomChar(symbols),
+  ];
+
+  for (let i = passwordChars.length; i < length; i++) {
+    passwordChars.push(getRandomChar(all));
+  }
+
+  // Shuffle using Fisher-Yates with crypto randomness
+  for (let i = passwordChars.length - 1; i > 0; i--) {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const j = array[0] % (i + 1);
+    [passwordChars[i], passwordChars[j]] = [passwordChars[j], passwordChars[i]];
+  }
+
+  return passwordChars.join("");
+}
 
 interface ResetPasswordDialogProps {
   open: boolean;
@@ -45,13 +85,35 @@ export default function ResetPasswordDialog({
   const [error, setError] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleClose = () => {
     if (loading) return;
     setNewPassword("");
     setShowPassword(false);
+    setCopied(false);
     setError(null);
     onClose();
+  };
+
+  const handleGenerateRandom = () => {
+    const randomPwd = generateSecureRandomPassword(12);
+    setNewPassword(randomPwd);
+    setShowPassword(true);
+    setCopied(false);
+    setError(null);
+  };
+
+  const handleCopyPassword = async () => {
+    if (!newPassword) return;
+    try {
+      await navigator.clipboard.writeText(newPassword);
+      setCopied(true);
+      appToast.success(t("accounts.dialogs.resetPassword.copied"));
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      appToast.error(t("accounts.dialogs.generateCredential.copyFailed"));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,11 +178,41 @@ export default function ResetPasswordDialog({
               {t("accounts.dialogs.resetPassword.warning")}
             </Alert>
 
+            {/* Random Password Quick Generator Button */}
+            <Button
+              type="button"
+              variant="outlined"
+              color="primary"
+              size="small"
+              startIcon={<ShuffleIcon fontSize="small" />}
+              onClick={handleGenerateRandom}
+              disabled={loading}
+              sx={{
+                py: 0.9,
+                borderRadius: "10px",
+                fontWeight: 600,
+                textTransform: "none",
+                display: "flex",
+                justifyContent: "center",
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+                borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+                "&:hover": {
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
+                  borderColor: (theme) => theme.palette.primary.main,
+                },
+              }}
+            >
+              {t("accounts.dialogs.resetPassword.generateRandom")}
+            </Button>
+
             <TextField
               label={t("accounts.dialogs.resetPassword.newPassword")}
               type={showPassword ? "text" : "password"}
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                setCopied(false);
+              }}
               required
               fullWidth
               autoFocus
@@ -129,13 +221,57 @@ export default function ResetPasswordDialog({
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      aria-label="toggle password visibility"
+                    {/* Copy Password Button (visible when password entered) */}
+                    {newPassword && (
+                      <Tooltip
+                        title={
+                          copied
+                            ? t("accounts.dialogs.resetPassword.copied")
+                            : t("accounts.dialogs.resetPassword.copyPassword")
+                        }
+                        arrow
+                      >
+                        <IconButton
+                          onClick={handleCopyPassword}
+                          edge="end"
+                          size="small"
+                          color={copied ? "success" : "default"}
+                          aria-label="copy password"
+                          sx={{ mr: 0.5 }}
+                        >
+                          {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
+                        </IconButton>
+                      </Tooltip>
+                    )}
+
+                    {/* Shuffle / Random Button */}
+                    <Tooltip title={t("accounts.dialogs.resetPassword.generateRandom")} arrow>
+                      <IconButton
+                        onClick={handleGenerateRandom}
+                        edge="end"
+                        size="small"
+                        disabled={loading}
+                        aria-label="generate random password"
+                        sx={{ mr: 0.5 }}
+                      >
+                        <ShuffleIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+
+                    {/* Toggle Visibility */}
+                    <Tooltip
+                      title={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                      arrow
                     >
-                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </IconButton>
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        size="small"
+                        aria-label="toggle password visibility"
+                      >
+                        {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
                   </InputAdornment>
                 ),
               }}
@@ -161,3 +297,4 @@ export default function ResetPasswordDialog({
     </Dialog>
   );
 }
+

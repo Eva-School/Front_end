@@ -135,7 +135,10 @@
         "submit": "Reset Password",
         "cancel": "Cancel",
         "success": "Password reset successfully. Active sessions revoked.",
-        "failed": "Password reset failed."
+        "failed": "Password reset failed.",
+        "generateRandom": "Generate Random Password",
+        "copyPassword": "Copy Password",
+        "copied": "Copied to clipboard!"
       },
       "details": {
         "title": "Account Details",
