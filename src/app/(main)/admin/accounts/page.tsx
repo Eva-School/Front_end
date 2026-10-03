@@ -41,6 +41,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import EditIcon from "@mui/icons-material/Edit";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import LockResetIcon from "@mui/icons-material/LockReset";
@@ -70,6 +71,7 @@ export default function AdminAccountsPage() {
 
   // Roles lookup
   const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [pendingCount, setPendingCount] = useState<number>(0);
 
   // Query state
   const [searchInput, setSearchInput] = useState("");
@@ -123,11 +125,15 @@ export default function AdminAccountsPage() {
     };
   }, [searchInput]);
 
-  // Load roles once
+  // Load roles & pending credentials count
   useEffect(() => {
     AdminAccountsAPI.getRoles()
       .then((data) => setRoles(data))
       .catch((err) => console.error("Failed to load roles:", err));
+
+    AdminAccountsAPI.getUncredentialedStats()
+      .then((data) => setPendingCount(data.totalCount))
+      .catch((err) => console.error("Failed to load uncredentialed stats:", err));
   }, []);
 
   // Fetch accounts
@@ -291,21 +297,52 @@ export default function AdminAccountsPage() {
               </Typography>
             </Box>
 
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<PersonAddAlt1Icon />}
-              onClick={() => setCreateDialogOpen(true)}
-              sx={{
-                px: 3,
-                py: 1.2,
-                borderRadius: "12px",
-                fontWeight: 700,
-                boxShadow: theme.shadows[4],
-              }}
-            >
-              {t("accounts.addAccount")}
-            </Button>
+            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+              <Link href="/admin/accounts/pending-credentials" passHref style={{ textDecoration: "none" }}>
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  startIcon={<VpnKeyIcon />}
+                  endIcon={
+                    pendingCount > 0 ? (
+                      <Chip
+                        label={pendingCount}
+                        size="small"
+                        color="warning"
+                        sx={{ height: 22, fontSize: "0.75rem", fontWeight: 700 }}
+                      />
+                    ) : undefined
+                  }
+                  sx={{
+                    px: 2.5,
+                    py: 1.2,
+                    borderRadius: "12px",
+                    fontWeight: 700,
+                    borderWidth: 1.5,
+                    textTransform: "none",
+                  }}
+                >
+                  {t("accounts.createLoginsForExisting")}
+                </Button>
+              </Link>
+
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<PersonAddAlt1Icon />}
+                onClick={() => setCreateDialogOpen(true)}
+                sx={{
+                  px: 3,
+                  py: 1.2,
+                  borderRadius: "12px",
+                  fontWeight: 700,
+                  boxShadow: theme.shadows[4],
+                  textTransform: "none",
+                }}
+              >
+                {t("accounts.addAccount")}
+              </Button>
+            </Stack>
           </Box>
         </Stack>
 

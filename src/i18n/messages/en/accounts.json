@@ -156,6 +156,90 @@
         "twoFactor": "Two-Factor Auth",
         "lockoutStatus": "Lockout Status",
         "failedLogins": "Failed Login Attempts"
+      },
+      "generateCredential": {
+        "title": "Create Login Credentials",
+        "description": "Generate a login user account and initial password for {name}.",
+        "username": "Username",
+        "usernameHelper": "Leave blank to auto-generate unique username based on identifier.",
+        "email": "Email Address",
+        "emailHelper": "Institutional email will be assigned if left empty.",
+        "emailStrategy": "Email Assignment Strategy",
+        "useRegisteredEmail": "Use registered email: {email}",
+        "registeredEmailBadge": "Registered in data (Default)",
+        "autoInstitutionalEmail": "Auto-generate school institutional email",
+        "customEmailOption": "Enter custom email",
+        "passwordStrategy": "Password Strategy",
+        "autoPassword": "Auto-generate strong secure password",
+        "customPassword": "Set custom password",
+        "password": "Password",
+        "submit": "Generate Credentials",
+        "cancel": "Cancel",
+        "success": "Credentials created successfully!",
+        "resultTitle": "Login Credentials Created",
+        "resultNotice": "Copy and deliver these credentials securely to the user. The initial password will only be visible now.",
+        "copyAll": "Copy All Credentials",
+        "copyPassword": "Copy Password",
+        "copied": "Copied to clipboard!",
+        "copyFailed": "Failed to copy credentials.",
+        "done": "Done"
+      },
+      "batchGenerate": {
+        "title": "Batch Credential Generation",
+        "description": "You are generating login accounts and initial passwords for {count} selected records.",
+        "prioritizeRegistered": "Use existing registered email if available in data (Default)",
+        "autoEmail": "Auto-generate institutional email for accounts without registered email",
+        "emailDomain": "Email Domain",
+        "start": "Generate Credentials for All Selected",
+        "processing": "Processing credentials in secure transaction... please wait.",
+        "resultTitle": "Batch Generation Results",
+        "successSummary": "Successfully generated {success} of {total} accounts.",
+        "failureNotice": "{count} accounts failed to process.",
+        "exportCsv": "Export as CSV",
+        "copyTable": "Copy Credentials Table",
+        "copied": "Copied table to clipboard!",
+        "close": "Close"
+      }
+    },
+    "pendingCredentialsBtn": "Pending Credentials",
+    "createLoginsForExisting": "Create Logins for Existing",
+    "pendingBadge": "{count} Awaiting Login",
+    "pendingPage": {
+      "title": "Create Logins for Existing Accounts",
+      "subtitle": "Provision secure login credentials and passwords for enrolled students, faculty, and system records that currently lack login access.",
+      "backToAccounts": "Back to Account Management",
+      "stats": {
+        "total": "Total Awaiting Credentials",
+        "students": "Students Without Login",
+        "teachers": "Teachers Without Login",
+        "users": "System Users Missing Password"
+      },
+      "searchPlaceholder": "Search by name, student code, national ID, or email...",
+      "types": {
+        "all": "All Accounts",
+        "student": "Students",
+        "teacher": "Teachers",
+        "user": "System Users"
+      },
+      "table": {
+        "entity": "Account / Profile",
+        "type": "Type & Placement",
+        "identifier": "Identifier / Code",
+        "contact": "Contact Information",
+        "reason": "Status Gap",
+        "actions": "Action",
+        "createLogin": "Create Login"
+      },
+      "reasons": {
+        "NoUserAccount": "No User Account",
+        "NoPassword": "Password Not Set"
+      },
+      "noAccounts": "No accounts awaiting credentials match the selected filters.",
+      "batch": {
+        "dockTitle": "{count} accounts selected",
+        "generateBtn": "Generate Logins for Selected ({count})",
+        "clearSelection": "Clear Selection",
+        "selectAll": "Select All On Page"
       }
     },
     "validations": {

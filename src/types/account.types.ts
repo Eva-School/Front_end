@@ -174,3 +174,101 @@ export interface AccountFormOptions {
   departments: DepartmentOption[];
 }
 
+export interface UncredentialedAccountSummary {
+  key: string;
+  accountType: "Student" | "Teacher" | "User";
+  entityId: number;
+  userId?: number | null;
+  fullName: string;
+  nameArabic?: string | null;
+  nameEnglish?: string | null;
+  identifier: string;
+  nationalId?: string | null;
+  email?: string | null;
+  registeredEmail?: string | null;
+  hasRegisteredEmail?: boolean;
+  phoneNumber?: string | null;
+  role: string;
+  departmentName?: string | null;
+  className?: string | null;
+  academicYearName?: string | null;
+  missingReason: "NoUserAccount" | "NoPassword";
+  createdAt?: string | null;
+}
+
+export interface UncredentialedAccountListQuery {
+  search?: string;
+  accountType?: string;
+  departmentId?: number;
+  academicYearId?: number;
+  pageNumber?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDescending?: boolean;
+}
+
+export interface UncredentialedStats {
+  totalCount: number;
+  studentCount: number;
+  teacherCount: number;
+  userCount: number;
+}
+
+export interface CreateCredentialsForExistingPayload {
+  accountType: "Student" | "Teacher" | "User" | string;
+  entityId: number;
+  username?: string;
+  email?: string;
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+export interface CreateCredentialsResult {
+  userId: number;
+  username: string;
+  email: string;
+  generatedPassword: string;
+  fullName: string;
+  role: string;
+  accountType: string;
+  entityId: number;
+}
+
+export interface BatchCredentialItemRequest {
+  accountType: string;
+  entityId: number;
+  customUsername?: string;
+  customEmail?: string;
+}
+
+export interface BatchCreateCredentialsPayload {
+  items: BatchCredentialItemRequest[];
+  autoGenerateEmailIfMissing?: boolean;
+  prioritizeExistingRegisteredEmail?: boolean;
+  defaultEmailDomain?: string;
+}
+
+export interface BatchCredentialItemResult {
+  key: string;
+  accountType: string;
+  entityId: number;
+  userId?: number | null;
+  fullName: string;
+  identifier: string;
+  username: string;
+  email: string;
+  generatedPassword: string;
+  role: string;
+  succeeded: boolean;
+  error?: string | null;
+}
+
+export interface BatchCreateCredentialsResult {
+  totalRequested: number;
+  successCount: number;
+  failureCount: number;
+  credentials: BatchCredentialItemResult[];
+  errors: string[];
+}
+
